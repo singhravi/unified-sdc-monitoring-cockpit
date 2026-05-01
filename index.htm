@@ -1,0 +1,4727 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DataCentre IQ — Unified Operations Console</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* ── CSS variable fallbacks for standalone use ── */
+      :root {
+        --color-background-primary: #ffffff;
+        --color-background-secondary: #f5f5f4;
+        --color-background-tertiary: #f0eeec;
+        --color-text-primary: #1a1917;
+        --color-text-secondary: #57534e;
+        --color-text-tertiary: #a8a29e;
+        --color-border-primary: #d6d3d1;
+        --color-border-secondary: #e7e5e4;
+        --color-border-tertiary: #f5f5f4;
+        --border-radius-lg: 12px;
+        --border-radius-md: 8px;
+        --font-sans: "DM Sans", system-ui, sans-serif;
+        --font-mono: "JetBrains Mono", monospace;
+        --accent: #534ab7;
+        --accent-soft: #eeedfe;
+        --shadow-sm:
+          0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+        --shadow-md:
+          0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.05);
+      }
+
+      /* ── Reset ── */
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: var(--font-sans);
+      }
+
+      /* ── Shell ── */
+      .dc-shell {
+        display: grid;
+        grid-template-rows: 52px 1fr;
+        grid-template-columns: 224px 1fr;
+        /* Fill exactly the stable viewport — no fluctuation */
+        width: 100vw;
+        height: 100vh;
+        height: 100dvh; /* dynamic viewport height: immune to browser-chrome resize */
+        min-height: 0; /* prevent grid blowout */
+        border: none;
+        border-radius: 0;
+        overflow: hidden;
+        background: var(--color-background-tertiary);
+      }
+
+      /* ── Topbar ── */
+      .dc-topbar {
+        grid-column: 1/-1;
+        height: 52px; /* explicit: grid-row height + overflow:hidden = no shift */
+        flex-shrink: 0;
+        background: var(--color-background-primary);
+        border-bottom: 1px solid var(--color-border-secondary);
+        display: flex;
+        align-items: center;
+        padding: 0 20px;
+        gap: 14px;
+        box-shadow: 0 1px 0 var(--color-border-secondary);
+      }
+      .dc-logo {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--color-text-primary);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        letter-spacing: -0.01em;
+        flex-shrink: 0;
+      }
+      .dc-logo-mark {
+        width: 26px;
+        height: 26px;
+        background: linear-gradient(135deg, #6c63e8, #534ab7);
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 6px rgba(83, 74, 183, 0.35);
+      }
+      .dc-logo-mark svg {
+        display: block;
+      }
+      .dc-topbar-title {
+        font-size: 11.5px;
+        color: var(--color-text-tertiary);
+        border-left: 1px solid var(--color-border-secondary);
+        padding-left: 14px;
+        white-space: nowrap;
+        font-weight: 400;
+      }
+      .dc-pills {
+        display: flex;
+        gap: 6px;
+        margin-left: auto;
+        align-items: center;
+      }
+      .dc-pill {
+        font-size: 10.5px;
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-weight: 500;
+        letter-spacing: 0.01em;
+        border: 1px solid transparent;
+      }
+      .dc-pill.ok {
+        background: #e8f7f2;
+        color: #0f6e56;
+        border-color: #bce5d6;
+      }
+      .dc-pill.warn {
+        background: #fef3e2;
+        color: #92560a;
+        border-color: #fad9a0;
+      }
+      .dc-pill.crit {
+        background: #fee9e9;
+        color: #8e1c1c;
+        border-color: #f8c1c1;
+      }
+      .dc-pill.info {
+        background: #e5eefa;
+        color: #1a4f88;
+        border-color: #b8d1f5;
+      }
+      .dc-time {
+        font-size: 11px;
+        color: var(--color-text-tertiary);
+        font-family: var(--font-mono);
+        min-width: 68px;
+        text-align: right;
+        background: var(--color-background-secondary);
+        padding: 4px 8px;
+        border-radius: 6px;
+        border: 1px solid var(--color-border-secondary);
+      }
+
+      /* ── Sidebar ── */
+      .dc-sidebar {
+        background: var(--color-background-primary);
+        border-right: 1px solid var(--color-border-secondary);
+        overflow-y: auto;
+        padding: 10px 0 20px;
+        min-height: 0; /* crucial: lets grid row constrain the scroll container */
+      }
+      .dc-sidebar::-webkit-scrollbar {
+        width: 3px;
+      }
+      .dc-sidebar::-webkit-scrollbar-thumb {
+        background: var(--color-border-primary);
+        border-radius: 3px;
+      }
+
+      .nav-group {
+        margin-bottom: 2px;
+      }
+      .nav-group-label {
+        font-size: 9.5px;
+        font-weight: 600;
+        color: var(--color-text-tertiary);
+        text-transform: uppercase;
+        letter-spacing: 0.09em;
+        padding: 12px 16px 5px;
+      }
+      .nav-btn {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        width: 100%;
+        padding: 7px 14px 7px 16px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 400;
+        color: var(--color-text-secondary);
+        text-align: left;
+        transition:
+          background 0.15s ease,
+          color 0.15s ease;
+        border-radius: 0;
+        position: relative;
+      }
+      .nav-btn:hover {
+        background: var(--color-background-secondary);
+        color: var(--color-text-primary);
+      }
+      .nav-btn.active {
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-weight: 500;
+      }
+      .nav-btn.active::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 4px;
+        bottom: 4px;
+        width: 3px;
+        background: var(--accent);
+        border-radius: 0 3px 3px 0;
+      }
+      .nav-btn.active .nav-icon svg {
+        stroke: var(--accent);
+      }
+      .nav-icon {
+        width: 16px;
+        height: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        opacity: 0.85;
+      }
+      .nav-badge {
+        margin-left: auto;
+        font-size: 10px;
+        padding: 2px 7px;
+        border-radius: 20px;
+        font-weight: 600;
+        border: 1px solid transparent;
+        flex-shrink: 0;
+      }
+      .nav-badge.warn {
+        background: #fef3e2;
+        color: #92560a;
+        border-color: #fad9a0;
+      }
+      .nav-badge.crit {
+        background: #fee9e9;
+        color: #8e1c1c;
+        border-color: #f8c1c1;
+      }
+      .nav-badge.ok {
+        background: #e8f7f2;
+        color: #0f6e56;
+        border-color: #bce5d6;
+      }
+      .nav-sep {
+        height: 1px;
+        background: var(--color-border-secondary);
+        margin: 6px 16px;
+      }
+
+      /* ── Content area ── */
+      .dc-content {
+        overflow-y: auto;
+        padding: 18px;
+        background: var(--color-background-tertiary);
+        min-height: 0;
+      }
+      .dc-content::-webkit-scrollbar {
+        width: 4px;
+      }
+      .dc-content::-webkit-scrollbar-thumb {
+        background: var(--color-border-primary);
+        border-radius: 4px;
+      }
+
+      /* ── Pages ── */
+      .page {
+        display: none;
+      }
+      .page.active {
+        display: block;
+        animation: fadeIn 0.2s ease;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(4px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* ── Page header ── */
+      .page-hdr {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px;
+      }
+      .page-hdr h2 {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--color-text-primary);
+        letter-spacing: -0.01em;
+      }
+      .page-hdr-right {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+
+      /* ── Action buttons ── */
+      .action-btn {
+        font-size: 11px;
+        font-weight: 500;
+        color: var(--color-text-secondary);
+        background: var(--color-background-primary);
+        border: 1px solid var(--color-border-primary);
+        padding: 5px 12px;
+        border-radius: 7px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        box-shadow: var(--shadow-sm);
+      }
+      .action-btn:hover {
+        background: var(--color-background-secondary);
+        color: var(--color-text-primary);
+        border-color: var(--color-border-primary);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+      }
+      .action-btn.primary {
+        background: var(--accent);
+        color: #fff;
+        border-color: var(--accent);
+      }
+      .action-btn.primary:hover {
+        background: #443ea0;
+        color: #fff;
+      }
+      /* keep old class working */
+      .refresh-btn {
+        font-size: 11px;
+        font-weight: 500;
+        color: var(--color-text-secondary);
+        background: var(--color-background-primary);
+        border: 1px solid var(--color-border-primary);
+        padding: 5px 12px;
+        border-radius: 7px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        box-shadow: var(--shadow-sm);
+      }
+      .refresh-btn:hover {
+        background: var(--color-background-secondary);
+        color: var(--color-text-primary);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+      }
+
+      /* ── KPI grid ── */
+      .kpis {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+        gap: 8px;
+        margin-bottom: 14px;
+      }
+      .kpi {
+        background: var(--color-background-primary);
+        border: 1px solid var(--color-border-secondary);
+        border-radius: var(--border-radius-md);
+        padding: 12px 13px;
+        position: relative;
+        overflow: hidden;
+        box-shadow: var(--shadow-sm);
+        transition: box-shadow 0.15s;
+      }
+      .kpi:hover {
+        box-shadow: var(--shadow-md);
+      }
+      .kpi-label {
+        font-size: 10px;
+        font-weight: 500;
+        color: var(--color-text-tertiary);
+        margin-bottom: 4px;
+        white-space: nowrap;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+      .kpi-val {
+        font-size: 20px;
+        font-weight: 600;
+        line-height: 1;
+        color: var(--color-text-primary);
+        font-family: var(--font-mono);
+      }
+      .kpi-sub {
+        font-size: 10px;
+        margin-top: 4px;
+        font-weight: 500;
+      }
+      .kpi-accent {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 3px;
+        height: 100%;
+        border-radius: 0 0 0 0;
+      }
+
+      /* ── Cards ── */
+      .card {
+        background: var(--color-background-primary);
+        border: 1px solid var(--color-border-secondary);
+        border-radius: var(--border-radius-md);
+        padding: 14px 16px;
+        margin-bottom: 10px;
+        box-shadow: var(--shadow-sm);
+      }
+      .card-hdr {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+      }
+      .card-title {
+        font-size: 12.5px;
+        font-weight: 600;
+        color: var(--color-text-primary);
+        letter-spacing: -0.01em;
+      }
+      .card-meta {
+        font-size: 10px;
+        color: var(--color-text-tertiary);
+        font-weight: 400;
+      }
+
+      /* ── Two-col grid ── */
+      .g2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+
+      /* ── Badges ── */
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        font-size: 10px;
+        font-weight: 600;
+        padding: 2px 8px;
+        border-radius: 20px;
+        white-space: nowrap;
+        border: 1px solid transparent;
+        letter-spacing: 0.01em;
+      }
+      .badge.ok {
+        background: #e8f7f2;
+        color: #0f6e56;
+        border-color: #bce5d6;
+      }
+      .badge.warn {
+        background: #fef3e2;
+        color: #92560a;
+        border-color: #fad9a0;
+      }
+      .badge.crit {
+        background: #fee9e9;
+        color: #8e1c1c;
+        border-color: #f8c1c1;
+      }
+      .badge.info {
+        background: #e5eefa;
+        color: #1a4f88;
+        border-color: #b8d1f5;
+      }
+      .badge.off {
+        background: #f5f4f2;
+        color: #78716c;
+        border-color: #d6d3d1;
+      }
+      .badge.purple {
+        background: #eeedfe;
+        color: #3c3489;
+        border-color: #c5c1f5;
+      }
+
+      /* ── Tables ── */
+      .tbl {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 11.5px;
+        table-layout: fixed;
+      }
+      .tbl th {
+        text-align: left;
+        color: var(--color-text-tertiary);
+        font-weight: 600;
+        font-size: 10px;
+        padding: 6px 10px;
+        border-bottom: 1px solid var(--color-border-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .tbl td {
+        padding: 8px 10px;
+        border-bottom: 1px solid var(--color-border-secondary);
+        color: var(--color-text-primary);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 11.5px;
+      }
+      .tbl tr:last-child td {
+        border-bottom: none;
+      }
+      .tbl tbody tr {
+        transition: background 0.1s ease;
+      }
+      .tbl tbody tr:hover td {
+        background: var(--color-background-secondary);
+      }
+
+      /* ── Bar rows ── */
+      .bar-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 8px;
+      }
+      .bar-lbl {
+        font-size: 11px;
+        color: var(--color-text-secondary);
+        width: 100px;
+        flex-shrink: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .bar-track {
+        flex: 1;
+        height: 6px;
+        background: var(--color-background-secondary);
+        border-radius: 3px;
+        overflow: hidden;
+        border: 1px solid var(--color-border-secondary);
+      }
+      .bar-fill {
+        height: 100%;
+        border-radius: 3px;
+        transition: width 0.6s ease;
+      }
+      .bar-val {
+        font-size: 11px;
+        color: var(--color-text-secondary);
+        width: 40px;
+        text-align: right;
+        flex-shrink: 0;
+        font-family: var(--font-mono);
+        font-size: 10.5px;
+      }
+
+      /* ── Timeline ── */
+      .timeline {
+        padding-left: 16px;
+        position: relative;
+      }
+      .timeline::before {
+        content: "";
+        position: absolute;
+        left: 4px;
+        top: 6px;
+        bottom: 6px;
+        width: 1px;
+        background: var(--color-border-secondary);
+      }
+      .tl {
+        position: relative;
+        margin-bottom: 12px;
+        font-size: 11.5px;
+      }
+      .tl-dot {
+        position: absolute;
+        left: -16px;
+        top: 4px;
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        border: 2px solid var(--color-border-primary);
+        background: var(--color-background-primary);
+      }
+      .tl-dot.ok {
+        border-color: #1d9e75;
+        background: #e8f7f2;
+      }
+      .tl-dot.warn {
+        border-color: #ba7517;
+        background: #fef3e2;
+      }
+      .tl-dot.crit {
+        border-color: #a32d2d;
+        background: #fee9e9;
+      }
+      .tl-time {
+        color: var(--color-text-tertiary);
+        font-size: 10px;
+        font-weight: 500;
+        margin-bottom: 2px;
+      }
+      .tl-text {
+        color: var(--color-text-primary);
+        line-height: 1.4;
+      }
+
+      /* ── Zone grid ── */
+      .zone-grid {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 7px;
+        margin-bottom: 12px;
+      }
+      .zone-cell {
+        border-radius: var(--border-radius-md);
+        padding: 10px;
+        text-align: center;
+        border: 1px solid transparent;
+        transition: box-shadow 0.15s;
+      }
+      .zone-cell:hover {
+        box-shadow: var(--shadow-md);
+      }
+      .zone-cell.ok {
+        background: #e8f7f2;
+        border-color: #bce5d6;
+      }
+      .zone-cell.warn {
+        background: #fef3e2;
+        border-color: #fad9a0;
+      }
+      .zone-cell.crit {
+        background: #fee9e9;
+        border-color: #f8c1c1;
+      }
+      .zone-name {
+        font-size: 10px;
+        font-weight: 600;
+        margin-bottom: 3px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+      .zone-val {
+        font-size: 13px;
+        font-weight: 700;
+        font-family: var(--font-mono);
+      }
+      .zone-sub {
+        font-size: 9.5px;
+        margin-top: 2px;
+        opacity: 0.8;
+      }
+      .zone-cell.ok .zone-name,
+      .zone-cell.ok .zone-val,
+      .zone-cell.ok .zone-sub {
+        color: #0f6e56;
+      }
+      .zone-cell.warn .zone-name,
+      .zone-cell.warn .zone-val,
+      .zone-cell.warn .zone-sub {
+        color: #92560a;
+      }
+      .zone-cell.crit .zone-name,
+      .zone-cell.crit .zone-val,
+      .zone-cell.crit .zone-sub {
+        color: #8e1c1c;
+      }
+
+      /* ── Sensor grid ── */
+      .sensor-grid {
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 6px;
+        margin-bottom: 10px;
+      }
+      .sensor-cell {
+        border-radius: 7px;
+        padding: 8px 4px;
+        text-align: center;
+        font-size: 10px;
+        font-weight: 500;
+        border: 1px solid transparent;
+        transition: box-shadow 0.1s;
+        line-height: 1.4;
+      }
+      .sensor-cell:hover {
+        box-shadow: var(--shadow-sm);
+      }
+      .sensor-cell.ok {
+        background: #e8f7f2;
+        color: #0f6e56;
+        border-color: #bce5d6;
+      }
+      .sensor-cell.off {
+        background: #f5f4f2;
+        color: #78716c;
+        border-color: #d6d3d1;
+      }
+
+      /* ── Camera grid ── */
+      .cam-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+      .cam {
+        border-radius: var(--border-radius-md);
+        border: 1px solid var(--color-border-secondary);
+        overflow: hidden;
+        box-shadow: var(--shadow-sm);
+      }
+      .cam-screen {
+        height: 68px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+        position: relative;
+      }
+      .cam-screen.ok {
+        background: linear-gradient(135deg, #0d5c46, #1d9e75);
+      }
+      .cam-screen.warn {
+        background: linear-gradient(135deg, #6b3a09, #ba7517);
+      }
+      .cam-lbl {
+        font-size: 10px;
+        color: var(--color-text-secondary);
+        padding: 6px 10px;
+        background: var(--color-background-secondary);
+        font-weight: 500;
+      }
+      .cam-live {
+        font-size: 9.5px;
+        font-weight: 600;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        letter-spacing: 0.03em;
+      }
+      .live-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #fff;
+        animation: pulse 1.4s ease-in-out infinite;
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.3;
+        }
+      }
+
+      /* ── Progress ── */
+      .progress-wrap {
+        margin-bottom: 8px;
+      }
+      .progress-track {
+        height: 9px;
+        background: var(--color-background-secondary);
+        border-radius: 5px;
+        overflow: hidden;
+        margin-top: 5px;
+        border: 1px solid var(--color-border-secondary);
+      }
+      .progress-fill {
+        height: 100%;
+        border-radius: 5px;
+        background: linear-gradient(90deg, #534ab7, #7b74d4);
+        transition: width 0.6s ease;
+      }
+
+      /* ── Sparkline / uptime ── */
+      .sparkline-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 8px;
+      }
+      .sparkline-name {
+        font-size: 11px;
+        color: var(--color-text-secondary);
+        width: 84px;
+        flex-shrink: 0;
+        font-weight: 500;
+      }
+      .uptime-bar {
+        display: flex;
+        gap: 2px;
+        flex: 1;
+      }
+      .uptime-seg {
+        height: 16px;
+        border-radius: 2px;
+        flex: 1;
+        transition: opacity 0.15s;
+      }
+      .uptime-seg:hover {
+        opacity: 0.7;
+      }
+      .uptime-seg.ok {
+        background: #1d9e75;
+      }
+      .uptime-seg.warn {
+        background: #ba7517;
+      }
+      .uptime-seg.crit {
+        background: #a32d2d;
+      }
+      .uptime-seg.empty {
+        background: var(--color-background-secondary);
+      }
+
+      /* ── Stat row ── */
+      .stat-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 7px 0;
+        border-bottom: 1px solid var(--color-border-secondary);
+        font-size: 11.5px;
+      }
+      .stat-row:last-child {
+        border-bottom: none;
+      }
+      .stat-lbl {
+        color: var(--color-text-secondary);
+      }
+      .stat-val {
+        font-weight: 600;
+        color: var(--color-text-primary);
+        font-family: var(--font-mono);
+        font-size: 11px;
+      }
+
+      /* ── Donut ── */
+      .donut-wrap {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+      .donut-legend {
+        font-size: 11px;
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+      }
+      .donut-legend-row {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        color: var(--color-text-secondary);
+      }
+      .donut-legend-dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+
+      /* ── Section separator ── */
+      .section-sep {
+        font-size: 10px;
+        font-weight: 700;
+        color: var(--color-text-tertiary);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin: 14px 0 9px;
+        padding-bottom: 6px;
+        border-bottom: 1px solid var(--color-border-secondary);
+      }
+
+      /* ── Alert strip ── */
+      .alert-strip {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 8px 0;
+        border-bottom: 1px solid var(--color-border-secondary);
+        cursor: pointer;
+        transition: background 0.1s;
+        border-radius: 0;
+      }
+      .alert-strip:last-child {
+        border-bottom: none;
+      }
+      .alert-strip:hover {
+        background: var(--color-background-secondary);
+        margin: 0 -16px;
+        padding-left: 16px;
+        padding-right: 16px;
+        border-radius: 6px;
+      }
+      .alert-sev {
+        width: 3px;
+        border-radius: 2px;
+        align-self: stretch;
+        flex-shrink: 0;
+        min-height: 28px;
+      }
+      .alert-sev.crit {
+        background: #a32d2d;
+      }
+      .alert-sev.warn {
+        background: #ba7517;
+      }
+      .alert-sev.ok {
+        background: #1d9e75;
+      }
+      .alert-txt {
+        font-size: 11.5px;
+        flex: 1;
+      }
+      .alert-time {
+        font-size: 10px;
+        color: var(--color-text-tertiary);
+        white-space: nowrap;
+        font-weight: 500;
+        margin-bottom: 2px;
+      }
+
+      /* ── Trend tags ── */
+      .trend-tag {
+        font-size: 10px;
+        font-weight: 600;
+      }
+      .trend-tag.up {
+        color: #a32d2d;
+      }
+      .trend-tag.dn {
+        color: #1d9e75;
+      }
+      .trend-tag.flat {
+        color: #ba7517;
+      }
+
+      /* ── Filter button active state ── */
+      .filter-btn-active {
+        background: var(--accent) !important;
+        color: #fff !important;
+        border-color: var(--accent) !important;
+      }
+    </style>
+  </head>
+  <body
+    style="
+      background: #f8f7f5;
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100vh;
+      height: 100dvh;
+      overflow: hidden;
+      display: flex;
+      align-items: stretch;
+      justify-content: stretch;
+    "
+  >
+    <div class="dc-shell">
+      <!-- ── TOP BAR ── -->
+      <div class="dc-topbar">
+        <div class="dc-logo">
+          <div class="dc-logo-mark">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <rect
+                x="1"
+                y="1"
+                width="5"
+                height="5"
+                rx="1"
+                fill="rgba(255,255,255,.9)"
+              />
+              <rect
+                x="8"
+                y="1"
+                width="5"
+                height="3"
+                rx="1"
+                fill="rgba(255,255,255,.6)"
+              />
+              <rect
+                x="8"
+                y="6"
+                width="5"
+                height="3"
+                rx="1"
+                fill="rgba(255,255,255,.6)"
+              />
+              <rect
+                x="1"
+                y="8"
+                width="5"
+                height="5"
+                rx="1"
+                fill="rgba(255,255,255,.7)"
+              />
+              <rect
+                x="8"
+                y="11"
+                width="5"
+                height="2"
+                rx="1"
+                fill="rgba(255,255,255,.4)"
+              />
+            </svg>
+          </div>
+          DataCentre IQ
+        </div>
+        <div class="dc-topbar-title">
+          Unified Operations Console — Designed and Developed by Ravi Shankar
+          Singh, Head SeMT/CTO -ITDA (in charge), Uttarakhand · Dehradun
+        </div>
+        <div class="dc-pills">
+          <span class="dc-pill ok">49 Apps</span>
+          <span class="dc-pill warn">14 Alerts</span>
+          <span class="dc-pill ok">Temp OK</span>
+          <span class="dc-pill crit">3 Critical</span>
+        </div>
+        <div class="dc-time" id="clock">—</div>
+      </div>
+
+      <!-- ── SIDEBAR ── -->
+      <div class="dc-sidebar">
+        <div class="nav-group">
+          <div class="nav-group-label">Overview</div>
+          <button class="nav-btn active" onclick="nav(this, 'overview')">
+            <div class="nav-icon">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <rect
+                  x="1"
+                  y="1"
+                  width="5"
+                  height="5"
+                  rx="1"
+                  stroke="currentColor"
+                  stroke-width="1.1"
+                />
+                <rect
+                  x="8"
+                  y="1"
+                  width="5"
+                  height="5"
+                  rx="1"
+                  stroke="currentColor"
+                  stroke-width="1.1"
+                />
+                <rect
+                  x="1"
+                  y="8"
+                  width="5"
+                  height="5"
+                  rx="1"
+                  stroke="currentColor"
+                  stroke-width="1.1"
+                />
+                <rect
+                  x="8"
+                  y="8"
+                  width="5"
+                  height="5"
+                  rx="1"
+                  stroke="currentColor"
+                  stroke-width="1.1"
+                />
+              </svg>
+            </div>
+            Dashboard
+          </button>
+        </div>
+
+        <div class="nav-sep"></div>
+
+        <div class="nav-group">
+          <div class="nav-group-label">Applications</div>
+          <button class="nav-btn" onclick="nav(this, 'apphealth')">
+            <div class="nav-icon">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <circle
+                  cx="7"
+                  cy="7"
+                  r="5.5"
+                  stroke="currentColor"
+                  stroke-width="1.1"
+                />
+                <path
+                  d="M4 7h1.5l1-2.5 2 5 1-2.5H12"
+                  stroke="currentColor"
+                  stroke-width="1.1"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </div>
+            App health
+            <span class="nav-badge warn">2</span>
+          </button>
+          <button class="nav-btn" onclick="nav(this, 'usage')">
+            <div class="nav-icon">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <rect
+                  x="1"
+                  y="8"
+                  width="2.5"
+                  height="5"
+                  rx="0.5"
+                  stroke="currentColor"
+                  stroke-width="1.1"
+                />
+                <rect
+                  x="5.5"
+                  y="5"
+                  width="2.5"
+                  height="8"
+                  rx="0.5"
+                  stroke="currentColor"
+                  stroke-width="1.1"
+                />
+                <rect
+                  x="10"
+                  y="2"
+                  width="2.5"
+                  height="11"
+                  rx="0.5"
+                  stroke="currentColor"
+                  stroke-width="1.1"
+                />
+              </svg>
+            </div>
+            Usage &amp; capacity
+          </button>
+        </div>
+
+        <div class="nav-sep"></div>
+
+        <div class="nav-group">
+          <div class="nav-group-label">Data protection</div>
+          <button class="nav-btn" onclick="nav(this, 'backup')">
+            <div class="nav-icon">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path
+                  d="M7 1v8m0 0l-3-3m3 3l3-3"
+                  stroke="currentColor"
+                  stroke-width="1.1"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <path
+                  d="M2 10v2a1 1 0 001 1h8a1 1 0 001-1v-2"
+                  stroke="currentColor"
+                  stroke-width="1.1"
+                  stroke-linecap="round"
+                />
+              </svg>
+            </div>
+            Backup
+            <span class="nav-badge crit">1</span>
+          </button>
+          <button class="nav-btn" onclick="nav(this, 'snapshot')">
+            <div class="nav-icon">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <circle
+                  cx="7"
+                  cy="7"
+                  r="5.5"
+                  stroke="currentColor"
+                  stroke-width="1.1"
+                />
+                <circle
+                  cx="7"
+                  cy="7"
+                  r="2.5"
+                  stroke="currentColor"
+                  stroke-width="1.1"
+                />
+              </svg>
+            </div>
+            Snapshot
+          </button>
+          <button class="nav-btn" onclick="nav(this, 'restore')">
+            <div class="nav-icon">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path
+                  d="M2.5 7a4.5 4.5 0 104.5-4.5H5M5 2.5L3 4.5l2 2"
+                  stroke="currentColor"
+                  stroke-width="1.1"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </div>
+            Restore
+            <span class="nav-badge warn">1</span>
+          </button>
+        </div>
+
+        <div class="nav-sep"></div>
+
+        <div class="nav-group">
+          <div class="nav-group-label">Security &amp; operations</div>
+          <button class="nav-btn" onclick="nav(this, 'siem')">
+            <div class="nav-icon">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path
+                  d="M7 1L2 4v4c0 2.8 2.2 4.8 5 5.5C10 12.8 12 10.8 12 8V4L7 1z"
+                  stroke="currentColor"
+                  stroke-width="1.1"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </div>
+            SIEM
+            <span class="nav-badge crit">3</span>
+          </button>
+          <button class="nav-btn" onclick="nav(this, 'soc')">
+            <div class="nav-icon">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <circle
+                  cx="7"
+                  cy="5"
+                  r="2.5"
+                  stroke="currentColor"
+                  stroke-width="1.1"
+                />
+                <path
+                  d="M2 12c0-2.8 2.2-4 5-4s5 1.2 5 4"
+                  stroke="currentColor"
+                  stroke-width="1.1"
+                  stroke-linecap="round"
+                />
+              </svg>
+            </div>
+            SOC
+            <span class="nav-badge warn">7</span>
+          </button>
+          <button class="nav-btn" onclick="nav(this, 'noc')">
+            <div class="nav-icon">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <rect
+                  x="1"
+                  y="3"
+                  width="12"
+                  height="8"
+                  rx="1"
+                  stroke="currentColor"
+                  stroke-width="1.1"
+                />
+                <path
+                  d="M4 11v2M10 11v2M3 13h8"
+                  stroke="currentColor"
+                  stroke-width="1.1"
+                  stroke-linecap="round"
+                />
+              </svg>
+            </div>
+            NOC
+            <span class="nav-badge warn">2</span>
+          </button>
+        </div>
+
+        <div class="nav-sep"></div>
+
+        <div class="nav-group">
+          <div class="nav-group-label">Environment</div>
+          <button class="nav-btn" onclick="nav(this, 'env')">
+            <div class="nav-icon">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <rect
+                  x="5"
+                  y="1"
+                  width="4"
+                  height="8"
+                  rx="2"
+                  stroke="currentColor"
+                  stroke-width="1.1"
+                />
+                <circle
+                  cx="7"
+                  cy="11"
+                  r="2"
+                  stroke="currentColor"
+                  stroke-width="1.1"
+                />
+                <path
+                  d="M7 9v-1"
+                  stroke="currentColor"
+                  stroke-width="1.1"
+                  stroke-linecap="round"
+                />
+              </svg>
+            </div>
+            Temp &amp; humidity
+            <span class="nav-badge warn">1</span>
+          </button>
+          <button class="nav-btn" onclick="nav(this, 'rodent')">
+            <div class="nav-icon">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <ellipse
+                  cx="6"
+                  cy="8"
+                  rx="4"
+                  ry="3"
+                  stroke="currentColor"
+                  stroke-width="1.1"
+                />
+                <circle
+                  cx="6"
+                  cy="5"
+                  r="1.5"
+                  stroke="currentColor"
+                  stroke-width="1.1"
+                />
+                <path
+                  d="M10 8c1.5 0 3 .5 3 2"
+                  stroke="currentColor"
+                  stroke-width="1.1"
+                  stroke-linecap="round"
+                />
+              </svg>
+            </div>
+            Rodent detection
+            <span class="nav-badge ok">0</span>
+          </button>
+          <button class="nav-btn" onclick="nav(this, 'security')">
+            <div class="nav-icon">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <rect
+                  x="1"
+                  y="6"
+                  width="12"
+                  height="7"
+                  rx="1"
+                  stroke="currentColor"
+                  stroke-width="1.1"
+                />
+                <path
+                  d="M4 6V4a3 3 0 016 0v2"
+                  stroke="currentColor"
+                  stroke-width="1.1"
+                  stroke-linecap="round"
+                />
+                <circle cx="7" cy="9.5" r="1" fill="currentColor" />
+              </svg>
+            </div>
+            Physical security
+            <span class="nav-badge warn">1</span>
+          </button>
+        </div>
+      </div>
+      <!-- /sidebar -->
+
+      <!-- ── CONTENT ── -->
+      <div class="dc-content">
+        <!-- ═══ OVERVIEW ═══ -->
+        <div id="page-overview" class="page active">
+          <div class="page-hdr">
+            <h2>Dashboard overview</h2>
+            <div class="page-hdr-right">
+              <span
+                style="font-size: 10.5px; color: var(--color-text-tertiary)"
+                id="last-refresh"
+                >Last refreshed: —</span
+              >
+              <button class="refresh-btn" onclick="refreshDash()">
+                ↻ Refresh
+              </button>
+            </div>
+          </div>
+          <div class="kpis">
+            <div class="kpi">
+              <div class="kpi-accent" style="background: #534ab7"></div>
+              <div class="kpi-label">Applications</div>
+              <div class="kpi-val">49</div>
+              <div class="kpi-sub">
+                <span style="color: #1d9e75">45 healthy</span> ·
+                <span style="color: #ba7517">2 warn</span>
+              </div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-accent" style="background: #1d9e75"></div>
+              <div class="kpi-label">Backup rate</div>
+              <div class="kpi-val" style="color: #1d9e75">98.2%</div>
+              <div class="kpi-sub" style="color: #1d9e75">On schedule</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-accent" style="background: #a32d2d"></div>
+              <div class="kpi-label">Active alerts</div>
+              <div class="kpi-val" style="color: #ba7517">14</div>
+              <div class="kpi-sub">
+                <span style="color: #a32d2d">3 critical</span>
+              </div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-accent" style="background: #ba7517"></div>
+              <div class="kpi-label">Avg temp</div>
+              <div class="kpi-val">21.4°C</div>
+              <div class="kpi-sub" style="color: #1d9e75">All zones OK</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-accent" style="background: #185fa5"></div>
+              <div class="kpi-label">Uptime 30d</div>
+              <div class="kpi-val">99.94%</div>
+              <div class="kpi-sub" style="color: #1d9e75">SLA met</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-accent" style="background: #1d9e75"></div>
+              <div class="kpi-label">Security</div>
+              <div class="kpi-val" style="color: #1d9e75">Clear</div>
+              <div class="kpi-sub" style="color: #ba7517">1 door warn</div>
+            </div>
+          </div>
+          <div class="section-sep">Zone health</div>
+          <div class="zone-grid">
+            <div class="zone-cell ok">
+              <div class="zone-name">Zone A</div>
+              <div class="zone-val">20.2°C</div>
+              <div class="zone-sub">44% RH</div>
+            </div>
+            <div class="zone-cell ok">
+              <div class="zone-name">Zone B</div>
+              <div class="zone-val">21.0°C</div>
+              <div class="zone-sub">43% RH</div>
+            </div>
+            <div class="zone-cell ok">
+              <div class="zone-name">Zone C</div>
+              <div class="zone-val">22.1°C</div>
+              <div class="zone-sub">46% RH</div>
+            </div>
+            <div class="zone-cell warn">
+              <div class="zone-name">Zone D</div>
+              <div class="zone-val">26.8°C</div>
+              <div class="zone-sub">52% RH !</div>
+            </div>
+            <div class="zone-cell ok">
+              <div class="zone-name">Zone E</div>
+              <div class="zone-val">19.8°C</div>
+              <div class="zone-sub">42% RH</div>
+            </div>
+          </div>
+          <div class="g2">
+            <div class="card">
+              <div class="card-hdr">
+                <div class="card-title">Live alerts</div>
+                <span class="card-meta">Last 2 hours</span>
+              </div>
+              <div class="alert-strip">
+                <div class="alert-sev crit"></div>
+                <div class="alert-txt">
+                  <div class="alert-time">09:14 · SIEM · Critical</div>
+                  <div class="tl-text">
+                    Brute-force SSH — 192.168.4.22 — blocked
+                  </div>
+                </div>
+              </div>
+              <div class="alert-strip">
+                <div class="alert-sev warn"></div>
+                <div class="alert-txt">
+                  <div class="alert-time">08:52 · NOC · High</div>
+                  <div class="tl-text">CPU spike srv-prod-07 (88%)</div>
+                </div>
+              </div>
+              <div class="alert-strip">
+                <div class="alert-sev warn"></div>
+                <div class="alert-txt">
+                  <div class="alert-time">08:30 · Env · Warning</div>
+                  <div class="tl-text">Zone D temp 26.8°C — threshold 27°C</div>
+                </div>
+              </div>
+              <div class="alert-strip">
+                <div class="alert-sev ok"></div>
+                <div class="alert-txt">
+                  <div class="alert-time">07:55 · Backup · Info</div>
+                  <div class="tl-text">db-prod-01 full backup completed</div>
+                </div>
+              </div>
+              <div class="alert-strip">
+                <div class="alert-sev ok"></div>
+                <div class="alert-txt">
+                  <div class="alert-time">07:20 · SOC · Info</div>
+                  <div class="tl-text">CVE-2025-1921 patch applied</div>
+                </div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-hdr">
+                <div class="card-title">Resource snapshot</div>
+                <span class="card-meta">Avg across cluster</span>
+              </div>
+              <div class="bar-row">
+                <div class="bar-lbl">CPU utilisation</div>
+                <div class="bar-track">
+                  <div
+                    class="bar-fill"
+                    style="width: 72%; background: #ba7517"
+                  ></div>
+                </div>
+                <div class="bar-val">72%</div>
+              </div>
+              <div class="bar-row">
+                <div class="bar-lbl">Memory</div>
+                <div class="bar-track">
+                  <div
+                    class="bar-fill"
+                    style="width: 64%; background: #534ab7"
+                  ></div>
+                </div>
+                <div class="bar-val">64%</div>
+              </div>
+              <div class="bar-row">
+                <div class="bar-lbl">Storage used</div>
+                <div class="bar-track">
+                  <div
+                    class="bar-fill"
+                    style="width: 58%; background: #185fa5"
+                  ></div>
+                </div>
+                <div class="bar-val">58%</div>
+              </div>
+              <div class="bar-row">
+                <div class="bar-lbl">Network</div>
+                <div class="bar-track">
+                  <div
+                    class="bar-fill"
+                    style="width: 48%; background: #1d9e75"
+                  ></div>
+                </div>
+                <div class="bar-val">12 Gbps</div>
+              </div>
+              <div class="bar-row">
+                <div class="bar-lbl">Backup storage</div>
+                <div class="bar-track">
+                  <div
+                    class="bar-fill"
+                    style="width: 36%; background: #0f6e56"
+                  ></div>
+                </div>
+                <div class="bar-val">18 TB</div>
+              </div>
+              <div class="section-sep" style="margin-top: 10px">
+                System status
+              </div>
+              <div class="stat-row">
+                <div class="stat-lbl">SIEM events (24h)</div>
+                <div class="stat-val">1,204</div>
+              </div>
+              <div class="stat-row">
+                <div class="stat-lbl">SOC open cases</div>
+                <div class="stat-val">7</div>
+              </div>
+              <div class="stat-row">
+                <div class="stat-lbl">Snapshots active</div>
+                <div class="stat-val">218</div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-hdr">
+              <div class="card-title">30-day uptime — production services</div>
+              <span class="card-meta">Each segment = 1 day</span>
+            </div>
+            <div class="sparkline-row">
+              <div class="sparkline-name">ERP Core</div>
+              <div class="uptime-bar" id="u1"></div>
+            </div>
+            <div class="sparkline-row">
+              <div class="sparkline-name">API Gateway</div>
+              <div class="uptime-bar" id="u2"></div>
+            </div>
+            <div class="sparkline-row">
+              <div class="sparkline-name">CRM App</div>
+              <div class="uptime-bar" id="u3"></div>
+            </div>
+            <div class="sparkline-row">
+              <div class="sparkline-name">Auth Service</div>
+              <div class="uptime-bar" id="u4"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ APP HEALTH ═══ -->
+        <div id="page-apphealth" class="page">
+          <div class="page-hdr">
+            <h2>Application health</h2>
+            <div class="page-hdr-right">
+              <button class="refresh-btn" onclick="filterApps('all', this)">
+                All
+              </button>
+              <button class="refresh-btn" onclick="filterApps('ok', this)">
+                Healthy
+              </button>
+              <button class="refresh-btn" onclick="filterApps('warn', this)">
+                Degraded
+              </button>
+              <button class="refresh-btn" onclick="filterApps('crit', this)">
+                Critical
+              </button>
+              <button class="refresh-btn" onclick="exportAppHealthCSV()">
+                Export CSV ↓
+              </button>
+            </div>
+          </div>
+          <div class="kpis">
+            <div class="kpi">
+              <div class="kpi-accent" style="background: #1d9e75"></div>
+              <div class="kpi-label">Healthy</div>
+              <div class="kpi-val" style="color: #1d9e75">45</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-accent" style="background: #ba7517"></div>
+              <div class="kpi-label">Degraded</div>
+              <div class="kpi-val" style="color: #ba7517">2</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-accent" style="background: #a32d2d"></div>
+              <div class="kpi-label">Down</div>
+              <div class="kpi-val" style="color: #a32d2d">2</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-accent" style="background: #534ab7"></div>
+              <div class="kpi-label">Avg response</div>
+              <div class="kpi-val">142ms</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-accent" style="background: #185fa5"></div>
+              <div class="kpi-label">Error rate</div>
+              <div class="kpi-val">0.04%</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-hdr">
+              <div class="card-title">Application registry</div>
+              <span class="card-meta" id="app-filter-label"
+                >Showing all apps</span
+              >
+            </div>
+            <table class="tbl" style="table-layout: fixed">
+              <colgroup>
+                <col style="width: 22%" />
+                <col style="width: 14%" />
+                <col style="width: 12%" />
+                <col style="width: 14%" />
+                <col style="width: 12%" />
+                <col style="width: 13%" />
+                <col style="width: 13%" />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th>Application</th>
+                  <th>Status</th>
+                  <th>Uptime</th>
+                  <th>Response</th>
+                  <th>Error %</th>
+                  <th>Tier</th>
+                  <th>Version</th>
+                </tr>
+              </thead>
+              <tbody id="app-tbody">
+                <tr data-status="ok">
+                  <td>ERP Core</td>
+                  <td><span class="badge ok">Healthy</span></td>
+                  <td>99.98%</td>
+                  <td>89ms</td>
+                  <td>0.01%</td>
+                  <td>Prod</td>
+                  <td>v4.2.1</td>
+                </tr>
+                <tr data-status="ok">
+                  <td>API Gateway</td>
+                  <td><span class="badge ok">Healthy</span></td>
+                  <td>99.99%</td>
+                  <td>12ms</td>
+                  <td>0.00%</td>
+                  <td>Prod</td>
+                  <td>v2.8.0</td>
+                </tr>
+                <tr data-status="ok">
+                  <td>Auth Service</td>
+                  <td><span class="badge ok">Healthy</span></td>
+                  <td>99.97%</td>
+                  <td>34ms</td>
+                  <td>0.02%</td>
+                  <td>Prod</td>
+                  <td>v3.1.4</td>
+                </tr>
+                <tr data-status="warn">
+                  <td>CRM App</td>
+                  <td><span class="badge warn">Degraded</span></td>
+                  <td>98.12%</td>
+                  <td>812ms</td>
+                  <td>1.40%</td>
+                  <td>Prod</td>
+                  <td>v5.0.2</td>
+                </tr>
+                <tr data-status="warn">
+                  <td>Analytics DB</td>
+                  <td><span class="badge warn">Degraded</span></td>
+                  <td>97.80%</td>
+                  <td>2.1s</td>
+                  <td>0.80%</td>
+                  <td>Prod</td>
+                  <td>v12.4</td>
+                </tr>
+                <tr data-status="crit">
+                  <td>Dev Portal</td>
+                  <td><span class="badge crit">Down</span></td>
+                  <td>—</td>
+                  <td>—</td>
+                  <td>—</td>
+                  <td>Dev</td>
+                  <td>v1.9.0</td>
+                </tr>
+                <tr data-status="ok">
+                  <td>Monitoring Srv</td>
+                  <td><span class="badge ok">Healthy</span></td>
+                  <td>99.94%</td>
+                  <td>55ms</td>
+                  <td>0.03%</td>
+                  <td>Infra</td>
+                  <td>v6.1.0</td>
+                </tr>
+                <tr data-status="ok">
+                  <td>Backup Agent</td>
+                  <td><span class="badge ok">Healthy</span></td>
+                  <td>99.99%</td>
+                  <td>22ms</td>
+                  <td>0.00%</td>
+                  <td>Infra</td>
+                  <td>v3.3.3</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="card">
+            <div class="card-hdr">
+              <div class="card-title">Response time trend (24h)</div>
+              <span class="card-meta">All apps combined</span>
+            </div>
+            <canvas id="resp-chart" height="60" style="width: 100%"></canvas>
+          </div>
+        </div>
+
+        <!-- ═══ USAGE ═══ -->
+        <div id="page-usage" class="page">
+          <div class="page-hdr">
+            <h2>Usage &amp; capacity</h2>
+            <div class="page-hdr-right">
+              <button class="refresh-btn" onclick="openModal('modal-forecast')">
+                Forecast ↗
+              </button>
+            </div>
+          </div>
+          <div class="kpis">
+            <div class="kpi">
+              <div class="kpi-accent" style="background: #ba7517"></div>
+              <div class="kpi-label">CPU</div>
+              <div class="kpi-val" style="color: #ba7517">72%</div>
+              <div class="kpi-sub trend-tag up">+4% vs yesterday</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-accent" style="background: #534ab7"></div>
+              <div class="kpi-label">Memory</div>
+              <div class="kpi-val">64%</div>
+              <div class="kpi-sub trend-tag flat">Stable</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-accent" style="background: #185fa5"></div>
+              <div class="kpi-label">Storage</div>
+              <div class="kpi-val">58.4 TB</div>
+              <div class="kpi-sub" style="color: var(--color-text-secondary)">
+                of 100 TB
+              </div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-accent" style="background: #1d9e75"></div>
+              <div class="kpi-label">Network in</div>
+              <div class="kpi-val">7.2 Gbps</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-accent" style="background: #0f6e56"></div>
+              <div class="kpi-label">Network out</div>
+              <div class="kpi-val">4.8 Gbps</div>
+            </div>
+          </div>
+          <div class="g2">
+            <div class="card">
+              <div class="card-hdr">
+                <div class="card-title">Server CPU utilisation</div>
+              </div>
+              <div class="bar-row">
+                <div class="bar-lbl">srv-prod-01</div>
+                <div class="bar-track">
+                  <div
+                    class="bar-fill"
+                    style="width: 88%; background: #a32d2d"
+                  ></div>
+                </div>
+                <div class="bar-val">88%</div>
+              </div>
+              <div class="bar-row">
+                <div class="bar-lbl">srv-prod-02</div>
+                <div class="bar-track">
+                  <div
+                    class="bar-fill"
+                    style="width: 74%; background: #ba7517"
+                  ></div>
+                </div>
+                <div class="bar-val">74%</div>
+              </div>
+              <div class="bar-row">
+                <div class="bar-lbl">srv-prod-03</div>
+                <div class="bar-track">
+                  <div
+                    class="bar-fill"
+                    style="width: 61%; background: #1d9e75"
+                  ></div>
+                </div>
+                <div class="bar-val">61%</div>
+              </div>
+              <div class="bar-row">
+                <div class="bar-lbl">srv-prod-04</div>
+                <div class="bar-track">
+                  <div
+                    class="bar-fill"
+                    style="width: 55%; background: #1d9e75"
+                  ></div>
+                </div>
+                <div class="bar-val">55%</div>
+              </div>
+              <div class="bar-row">
+                <div class="bar-lbl">srv-prod-05</div>
+                <div class="bar-track">
+                  <div
+                    class="bar-fill"
+                    style="width: 43%; background: #1d9e75"
+                  ></div>
+                </div>
+                <div class="bar-val">43%</div>
+              </div>
+              <div class="bar-row">
+                <div class="bar-lbl">srv-dev-01</div>
+                <div class="bar-track">
+                  <div
+                    class="bar-fill"
+                    style="width: 28%; background: #1d9e75"
+                  ></div>
+                </div>
+                <div class="bar-val">28%</div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-hdr">
+                <div class="card-title">Storage breakdown</div>
+              </div>
+              <div class="bar-row">
+                <div class="bar-lbl">Databases</div>
+                <div class="bar-track">
+                  <div
+                    class="bar-fill"
+                    style="width: 78%; background: #534ab7"
+                  ></div>
+                </div>
+                <div class="bar-val">22.1 TB</div>
+              </div>
+              <div class="bar-row">
+                <div class="bar-lbl">Backups</div>
+                <div class="bar-track">
+                  <div
+                    class="bar-fill"
+                    style="width: 62%; background: #185fa5"
+                  ></div>
+                </div>
+                <div class="bar-val">18.0 TB</div>
+              </div>
+              <div class="bar-row">
+                <div class="bar-lbl">Logs</div>
+                <div class="bar-track">
+                  <div
+                    class="bar-fill"
+                    style="width: 34%; background: #0f6e56"
+                  ></div>
+                </div>
+                <div class="bar-val">9.8 TB</div>
+              </div>
+              <div class="bar-row">
+                <div class="bar-lbl">Snapshots</div>
+                <div class="bar-track">
+                  <div
+                    class="bar-fill"
+                    style="width: 19%; background: #ba7517"
+                  ></div>
+                </div>
+                <div class="bar-val">5.4 TB</div>
+              </div>
+              <div class="bar-row">
+                <div class="bar-lbl">Archives</div>
+                <div class="bar-track">
+                  <div
+                    class="bar-fill"
+                    style="width: 11%; background: #888780"
+                  ></div>
+                </div>
+                <div class="bar-val">3.1 TB</div>
+              </div>
+              <div class="section-sep" style="margin-top: 10px">
+                Capacity forecast
+              </div>
+              <div class="stat-row">
+                <div class="stat-lbl">Days to 80% storage</div>
+                <div class="stat-val">~62 days</div>
+              </div>
+              <div class="stat-row">
+                <div class="stat-lbl">Growth rate</div>
+                <div class="stat-val">+340 GB/day</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ BACKUP ═══ -->
+        <div id="page-backup" class="page">
+          <div class="page-hdr">
+            <h2>Backup</h2>
+            <div class="page-hdr-right">
+              <button class="refresh-btn" onclick="openModal('modal-backup')">
+                Run manual backup ↗
+              </button>
+            </div>
+          </div>
+          <div class="kpis">
+            <div class="kpi">
+              <div class="kpi-accent" style="background: #1d9e75"></div>
+              <div class="kpi-label">Success rate</div>
+              <div class="kpi-val" style="color: #1d9e75">98.2%</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-accent" style="background: #534ab7"></div>
+              <div class="kpi-label">Jobs today</div>
+              <div class="kpi-val">54</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-accent" style="background: #a32d2d"></div>
+              <div class="kpi-label">Failed</div>
+              <div class="kpi-val" style="color: #a32d2d">1</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-accent" style="background: #185fa5"></div>
+              <div class="kpi-label">Data protected</div>
+              <div class="kpi-val">18.0 TB</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-accent" style="background: #ba7517"></div>
+              <div class="kpi-label">Next window</div>
+              <div class="kpi-val">02:00</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-hdr">
+              <div class="card-title">Backup jobs</div>
+              <span class="card-meta">Today · 09:18</span>
+            </div>
+            <table class="tbl">
+              <colgroup>
+                <col style="width: 22%" />
+                <col style="width: 16%" />
+                <col style="width: 14%" />
+                <col style="width: 12%" />
+                <col style="width: 14%" />
+                <col style="width: 22%" />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th>Target</th>
+                  <th>Type</th>
+                  <th>Status</th>
+                  <th>Duration</th>
+                  <th>Size</th>
+                  <th>Last run</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>db-prod-01</td>
+                  <td>Full</td>
+                  <td><span class="badge ok">Success</span></td>
+                  <td>1h 22m</td>
+                  <td>2.1 TB</td>
+                  <td>07:55</td>
+                </tr>
+                <tr>
+                  <td>db-prod-02</td>
+                  <td>Incremental</td>
+                  <td><span class="badge ok">Success</span></td>
+                  <td>18m</td>
+                  <td>340 GB</td>
+                  <td>08:10</td>
+                </tr>
+                <tr>
+                  <td>files-nas-01</td>
+                  <td>Full</td>
+                  <td><span class="badge ok">Success</span></td>
+                  <td>3h 05m</td>
+                  <td>5.8 TB</td>
+                  <td>04:00</td>
+                </tr>
+                <tr>
+                  <td>vm-crm-01</td>
+                  <td>Snapshot</td>
+                  <td><span class="badge crit">Failed</span></td>
+                  <td>—</td>
+                  <td>—</td>
+                  <td>06:30</td>
+                </tr>
+                <tr>
+                  <td>mail-srv-01</td>
+                  <td>Incremental</td>
+                  <td><span class="badge ok">Success</span></td>
+                  <td>44m</td>
+                  <td>820 GB</td>
+                  <td>08:45</td>
+                </tr>
+                <tr>
+                  <td>k8s-etcd</td>
+                  <td>Snapshot</td>
+                  <td><span class="badge ok">Success</span></td>
+                  <td>3m</td>
+                  <td>2 GB</td>
+                  <td>09:00</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ═══ SNAPSHOT ═══ -->
+        <div id="page-snapshot" class="page">
+          <div class="page-hdr">
+            <h2>Snapshot management</h2>
+            <div class="page-hdr-right">
+              <button class="refresh-btn" onclick="openModal('modal-snapshot')">
+                Create snapshot ↗
+              </button>
+            </div>
+          </div>
+          <div class="kpis">
+            <div class="kpi">
+              <div class="kpi-accent" style="background: #534ab7"></div>
+              <div class="kpi-label">Active snapshots</div>
+              <div class="kpi-val">218</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-accent" style="background: #185fa5"></div>
+              <div class="kpi-label">Total size</div>
+              <div class="kpi-val">5.4 TB</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-accent" style="background: #1d9e75"></div>
+              <div class="kpi-label">Scheduled today</div>
+              <div class="kpi-val">36</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-accent" style="background: #ba7517"></div>
+              <div class="kpi-label">Expiring soon</div>
+              <div class="kpi-val" style="color: #ba7517">12</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-hdr">
+              <div class="card-title">Snapshot inventory</div>
+            </div>
+            <table class="tbl">
+              <colgroup>
+                <col style="width: 20%" />
+                <col style="width: 16%" />
+                <col style="width: 14%" />
+                <col style="width: 14%" />
+                <col style="width: 12%" />
+                <col style="width: 14%" />
+                <col style="width: 10%" />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th>Volume</th>
+                  <th>Snapshot ID</th>
+                  <th>Type</th>
+                  <th>Created</th>
+                  <th>Retention</th>
+                  <th>Size</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>vol-db-prod</td>
+                  <td>snap-00a1</td>
+                  <td>Crash-consist.</td>
+                  <td>09:00</td>
+                  <td>30 days</td>
+                  <td>840 GB</td>
+                  <td><span class="badge ok">Active</span></td>
+                </tr>
+                <tr>
+                  <td>vol-app-prod</td>
+                  <td>snap-00a2</td>
+                  <td>App-consist.</td>
+                  <td>08:30</td>
+                  <td>14 days</td>
+                  <td>210 GB</td>
+                  <td><span class="badge ok">Active</span></td>
+                </tr>
+                <tr>
+                  <td>vol-nas-01</td>
+                  <td>snap-00a3</td>
+                  <td>Full</td>
+                  <td>04:00</td>
+                  <td>7 days</td>
+                  <td>1.1 TB</td>
+                  <td><span class="badge ok">Active</span></td>
+                </tr>
+                <tr>
+                  <td>vol-log-01</td>
+                  <td>snap-00a4</td>
+                  <td>Incremental</td>
+                  <td>07:00</td>
+                  <td>3 days</td>
+                  <td>55 GB</td>
+                  <td><span class="badge warn">Expiring</span></td>
+                </tr>
+                <tr>
+                  <td>vol-crm-01</td>
+                  <td>snap-009f</td>
+                  <td>Full</td>
+                  <td>Yesterday</td>
+                  <td>Expired</td>
+                  <td>420 GB</td>
+                  <td><span class="badge off">Expired</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ═══ RESTORE ═══ -->
+        <div id="page-restore" class="page">
+          <div class="page-hdr">
+            <h2>Restore operations</h2>
+            <div class="page-hdr-right">
+              <button class="refresh-btn" onclick="openModal('modal-restore')">
+                New restore request ↗
+              </button>
+            </div>
+          </div>
+          <div class="kpis">
+            <div class="kpi">
+              <div class="kpi-accent" style="background: #ba7517"></div>
+              <div class="kpi-label">In progress</div>
+              <div class="kpi-val" style="color: #ba7517">1</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-accent" style="background: #1d9e75"></div>
+              <div class="kpi-label">Completed today</div>
+              <div class="kpi-val">3</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-accent" style="background: #534ab7"></div>
+              <div class="kpi-label">Avg RTO</div>
+              <div class="kpi-val">24m</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-accent" style="background: #1d9e75"></div>
+              <div class="kpi-label">RPO met</div>
+              <div class="kpi-val" style="color: #1d9e75">100%</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-hdr">
+              <div class="card-title">Active restore — vm-crm-01</div>
+              <span class="badge warn">In progress</span>
+            </div>
+            <div
+              style="
+                font-size: 11.5px;
+                color: var(--color-text-secondary);
+                margin-bottom: 10px;
+              "
+            >
+              Restoring from snap-00a1 · Started 09:18 · ETA 09:44 · Requestor:
+              ops-team
+            </div>
+            <div class="progress-wrap">
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  font-size: 11px;
+                  color: var(--color-text-secondary);
+                  margin-bottom: 5px;
+                "
+              >
+                <span>Progress</span
+                ><span
+                  id="prog-pct"
+                  style="font-family: var(--font-mono); font-weight: 600"
+                  >62%</span
+                >
+              </div>
+              <div class="progress-track">
+                <div
+                  class="progress-fill"
+                  id="prog-bar"
+                  style="width: 62%"
+                ></div>
+              </div>
+            </div>
+            <div
+              style="
+                font-size: 10.5px;
+                color: var(--color-text-tertiary);
+                margin-top: 6px;
+              "
+            >
+              26 min elapsed · approx. 16 min remaining · 62 GB of 100 GB
+              transferred
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-hdr">
+              <div class="card-title">Restore history</div>
+            </div>
+            <table class="tbl">
+              <colgroup>
+                <col style="width: 22%" />
+                <col style="width: 18%" />
+                <col style="width: 14%" />
+                <col style="width: 12%" />
+                <col style="width: 18%" />
+                <col style="width: 16%" />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th>Target</th>
+                  <th>Source</th>
+                  <th>Initiated</th>
+                  <th>Duration</th>
+                  <th>Requestor</th>
+                  <th>Result</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>db-dev-02</td>
+                  <td>snap-009c</td>
+                  <td>08:05</td>
+                  <td>18m</td>
+                  <td>ops-team</td>
+                  <td><span class="badge ok">Success</span></td>
+                </tr>
+                <tr>
+                  <td>files-nas-01</td>
+                  <td>backup-2025</td>
+                  <td>Yesterday</td>
+                  <td>1h 02m</td>
+                  <td>infra-team</td>
+                  <td><span class="badge ok">Success</span></td>
+                </tr>
+                <tr>
+                  <td>mail-srv-01</td>
+                  <td>snap-0088</td>
+                  <td>Mon 14:00</td>
+                  <td>32m</td>
+                  <td>ops-team</td>
+                  <td><span class="badge ok">Success</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ═══ SIEM ═══ -->
+        <div id="page-siem" class="page">
+          <div class="page-hdr">
+            <h2>SIEM — security events</h2>
+            <div class="page-hdr-right">
+              <button class="refresh-btn" onclick="exportIncidentsCSV()">
+                Export incidents ↓
+              </button>
+            </div>
+          </div>
+          <div class="kpis">
+            <div class="kpi">
+              <div class="kpi-accent" style="background: #534ab7"></div>
+              <div class="kpi-label">Events 24h</div>
+              <div class="kpi-val">1,204</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-accent" style="background: #a32d2d"></div>
+              <div class="kpi-label">Critical</div>
+              <div class="kpi-val" style="color: #a32d2d">3</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-accent" style="background: #ba7517"></div>
+              <div class="kpi-label">High</div>
+              <div class="kpi-val" style="color: #ba7517">11</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-accent" style="background: #185fa5"></div>
+              <div class="kpi-label">Rules active</div>
+              <div class="kpi-val">84</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-accent" style="background: #1d9e75"></div>
+              <div class="kpi-label">MTTR</div>
+              <div class="kpi-val">38m</div>
+            </div>
+          </div>
+          <div class="g2">
+            <div class="card">
+              <div class="card-hdr">
+                <div class="card-title">Active incidents</div>
+              </div>
+              <div class="timeline">
+                <div class="tl">
+                  <div class="tl-dot crit"></div>
+                  <div class="tl-time">09:14 · Critical · SIEM-2041</div>
+                  <div class="tl-text">
+                    Brute-force SSH — 192.168.4.22 → 12 targets — 847
+                    attempts/min
+                  </div>
+                </div>
+                <div class="tl">
+                  <div class="tl-dot warn"></div>
+                  <div class="tl-time">08:52 · High · SIEM-2040</div>
+                  <div class="tl-text">
+                    Privilege escalation — svc-etl on db-prod-02
+                  </div>
+                </div>
+                <div class="tl">
+                  <div class="tl-dot warn"></div>
+                  <div class="tl-time">08:20 · High · SIEM-2039</div>
+                  <div class="tl-text">
+                    Anomalous exfil — 42 GB outbound port 443
+                  </div>
+                </div>
+                <div class="tl">
+                  <div class="tl-dot ok"></div>
+                  <div class="tl-time">
+                    07:15 · Medium · SIEM-2038 · Resolved
+                  </div>
+                  <div class="tl-text">
+                    Auth loop — API gateway — rate limiter triggered
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-hdr">
+                <div class="card-title">Event distribution</div>
+                <span class="card-meta">24h</span>
+              </div>
+              <div class="bar-row">
+                <div class="bar-lbl">Auth failures</div>
+                <div class="bar-track">
+                  <div
+                    class="bar-fill"
+                    style="width: 82%; background: #a32d2d"
+                  ></div>
+                </div>
+                <div class="bar-val">412</div>
+              </div>
+              <div class="bar-row">
+                <div class="bar-lbl">Firewall blocks</div>
+                <div class="bar-track">
+                  <div
+                    class="bar-fill"
+                    style="width: 54%; background: #ba7517"
+                  ></div>
+                </div>
+                <div class="bar-val">270</div>
+              </div>
+              <div class="bar-row">
+                <div class="bar-lbl">Policy violations</div>
+                <div class="bar-track">
+                  <div
+                    class="bar-fill"
+                    style="width: 38%; background: #534ab7"
+                  ></div>
+                </div>
+                <div class="bar-val">188</div>
+              </div>
+              <div class="bar-row">
+                <div class="bar-lbl">Anomaly detects</div>
+                <div class="bar-track">
+                  <div
+                    class="bar-fill"
+                    style="width: 28%; background: #185fa5"
+                  ></div>
+                </div>
+                <div class="bar-val">142</div>
+              </div>
+              <div class="bar-row">
+                <div class="bar-lbl">Malware flags</div>
+                <div class="bar-track">
+                  <div
+                    class="bar-fill"
+                    style="width: 10%; background: #d85a30"
+                  ></div>
+                </div>
+                <div class="bar-val">48</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ SOC ═══ -->
+        <div id="page-soc" class="page">
+          <div class="page-hdr">
+            <h2>SOC — security operations centre</h2>
+            <div class="page-hdr-right">
+              <button class="refresh-btn" onclick="openModal('modal-soc-case')">
+                New case ↗
+              </button>
+            </div>
+          </div>
+          <div class="kpis">
+            <div class="kpi">
+              <div class="kpi-accent" style="background: #ba7517"></div>
+              <div class="kpi-label">Open cases</div>
+              <div class="kpi-val" style="color: #ba7517">7</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-accent" style="background: #1d9e75"></div>
+              <div class="kpi-label">Analysts on shift</div>
+              <div class="kpi-val">4</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-accent" style="background: #1d9e75"></div>
+              <div class="kpi-label">Closed today</div>
+              <div class="kpi-val">12</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-accent" style="background: #185fa5"></div>
+              <div class="kpi-label">Threat feeds</div>
+              <div class="kpi-val" style="color: #1d9e75">6/6</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-accent" style="background: #a32d2d"></div>
+              <div class="kpi-label">Critical vulns</div>
+              <div class="kpi-val" style="color: #a32d2d">3</div>
+            </div>
+          </div>
+          <div class="g2">
+            <div class="card">
+              <div class="card-hdr">
+                <div class="card-title">Case queue</div>
+              </div>
+              <table class="tbl">
+                <colgroup>
+                  <col style="width: 22%" />
+                  <col style="width: 22%" />
+                  <col style="width: 26%" />
+                  <col style="width: 30%" />
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th>Case</th>
+                    <th>Priority</th>
+                    <th>Assignee</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>SOC-0441</td>
+                    <td><span class="badge crit">Critical</span></td>
+                    <td>A. Singh</td>
+                    <td>Active</td>
+                  </tr>
+                  <tr>
+                    <td>SOC-0440</td>
+                    <td><span class="badge warn">High</span></td>
+                    <td>R. Patel</td>
+                    <td>Investigating</td>
+                  </tr>
+                  <tr>
+                    <td>SOC-0439</td>
+                    <td><span class="badge warn">High</span></td>
+                    <td>M. Khan</td>
+                    <td>Containment</td>
+                  </tr>
+                  <tr>
+                    <td>SOC-0438</td>
+                    <td><span class="badge info">Medium</span></td>
+                    <td>—</td>
+                    <td>Queued</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="card">
+              <div class="card-hdr">
+                <div class="card-title">Vulnerability status</div>
+              </div>
+              <div class="bar-row">
+                <div class="bar-lbl">Critical patches</div>
+                <div class="bar-track">
+                  <div
+                    class="bar-fill"
+                    style="width: 40%; background: #a32d2d"
+                  ></div>
+                </div>
+                <div class="bar-val">3 open</div>
+              </div>
+              <div class="bar-row">
+                <div class="bar-lbl">High vulns</div>
+                <div class="bar-track">
+                  <div
+                    class="bar-fill"
+                    style="width: 62%; background: #ba7517"
+                  ></div>
+                </div>
+                <div class="bar-val">8 open</div>
+              </div>
+              <div class="bar-row">
+                <div class="bar-lbl">Patched 30d</div>
+                <div class="bar-track">
+                  <div
+                    class="bar-fill"
+                    style="width: 88%; background: #1d9e75"
+                  ></div>
+                </div>
+                <div class="bar-val">44</div>
+              </div>
+              <div class="section-sep" style="margin-top: 10px">Compliance</div>
+              <div class="stat-row">
+                <div class="stat-lbl">ISO 27001</div>
+                <div class="stat-val">
+                  <span class="badge ok">Compliant</span>
+                </div>
+              </div>
+              <div class="stat-row">
+                <div class="stat-lbl">PCI DSS</div>
+                <div class="stat-val">
+                  <span class="badge ok">Compliant</span>
+                </div>
+              </div>
+              <div class="stat-row">
+                <div class="stat-lbl">GDPR controls</div>
+                <div class="stat-val">
+                  <span class="badge warn">Review due</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ NOC ═══ -->
+        <div id="page-noc" class="page">
+          <div class="page-hdr">
+            <h2>NOC — network operations centre</h2>
+            <div class="page-hdr-right">
+              <button class="refresh-btn" onclick="openModal('modal-topology')">
+                Topology view ↗
+              </button>
+            </div>
+          </div>
+          <div class="kpis">
+            <div class="kpi">
+              <div class="kpi-accent" style="background: #ba7517"></div>
+              <div class="kpi-label">Active incidents</div>
+              <div class="kpi-val" style="color: #ba7517">2</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-accent" style="background: #1d9e75"></div>
+              <div class="kpi-label">Uptime 30d</div>
+              <div class="kpi-val" style="color: #1d9e75">99.94%</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-accent" style="background: #534ab7"></div>
+              <div class="kpi-label">Avg latency</div>
+              <div class="kpi-val">1.2ms</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-accent" style="background: #1d9e75"></div>
+              <div class="kpi-label">Packet loss</div>
+              <div class="kpi-val" style="color: #1d9e75">0.01%</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-accent" style="background: #185fa5"></div>
+              <div class="kpi-label">Bandwidth</div>
+              <div class="kpi-val">12 Gbps</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-hdr">
+              <div class="card-title">Network services</div>
+              <span class="card-meta">Live status</span>
+            </div>
+            <table class="tbl">
+              <colgroup>
+                <col style="width: 24%" />
+                <col style="width: 14%" />
+                <col style="width: 12%" />
+                <col style="width: 18%" />
+                <col style="width: 16%" />
+                <col style="width: 16%" />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th>Service</th>
+                  <th>Latency</th>
+                  <th>Loss</th>
+                  <th>BW used</th>
+                  <th>Interface</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Core Switch A</td>
+                  <td>0.3ms</td>
+                  <td>0.00%</td>
+                  <td>4.2 Gbps</td>
+                  <td>40GbE</td>
+                  <td><span class="badge ok">Up</span></td>
+                </tr>
+                <tr>
+                  <td>Core Switch B</td>
+                  <td>0.3ms</td>
+                  <td>0.00%</td>
+                  <td>3.8 Gbps</td>
+                  <td>40GbE</td>
+                  <td><span class="badge ok">Up</span></td>
+                </tr>
+                <tr>
+                  <td>Firewall Cluster</td>
+                  <td>0.8ms</td>
+                  <td>0.01%</td>
+                  <td>8.0 Gbps</td>
+                  <td>10GbE</td>
+                  <td><span class="badge ok">Up</span></td>
+                </tr>
+                <tr>
+                  <td>WAN Link (Primary)</td>
+                  <td>14ms</td>
+                  <td>0.02%</td>
+                  <td>2.1 Gbps</td>
+                  <td>1GbE</td>
+                  <td><span class="badge ok">Up</span></td>
+                </tr>
+                <tr>
+                  <td>WAN Link (Backup)</td>
+                  <td>22ms</td>
+                  <td>0.00%</td>
+                  <td>Standby</td>
+                  <td>1GbE</td>
+                  <td><span class="badge info">Standby</span></td>
+                </tr>
+                <tr>
+                  <td>Load Balancer</td>
+                  <td>0.6ms</td>
+                  <td>0.01%</td>
+                  <td>5.4 Gbps</td>
+                  <td>10GbE</td>
+                  <td><span class="badge warn">High load</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ═══ ENV ═══ -->
+        <div id="page-env" class="page">
+          <div class="page-hdr">
+            <h2>Temperature &amp; humidity</h2>
+            <div class="page-hdr-right">
+              <span style="font-size: 10.5px; color: var(--color-text-tertiary)"
+                >40 sensors · 8 CRAC units</span
+              >
+            </div>
+          </div>
+          <div class="kpis">
+            <div class="kpi">
+              <div class="kpi-accent" style="background: #1d9e75"></div>
+              <div class="kpi-label">Avg temp</div>
+              <div class="kpi-val">21.4°C</div>
+              <div class="kpi-sub" style="color: #1d9e75">Normal</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-accent" style="background: #ba7517"></div>
+              <div class="kpi-label">Max temp</div>
+              <div class="kpi-val" style="color: #ba7517">26.8°C</div>
+              <div class="kpi-sub" style="color: #ba7517">Zone D</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-accent" style="background: #185fa5"></div>
+              <div class="kpi-label">Avg humidity</div>
+              <div class="kpi-val">45%</div>
+              <div class="kpi-sub" style="color: #1d9e75">Normal</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-accent" style="background: #1d9e75"></div>
+              <div class="kpi-label">CRAC online</div>
+              <div class="kpi-val" style="color: #1d9e75">8/8</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-accent" style="background: #534ab7"></div>
+              <div class="kpi-label">Dew point (avg)</div>
+              <div class="kpi-val">9.8°C</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-hdr">
+              <div class="card-title">Zone sensor readings</div>
+              <span class="card-meta">Threshold: 27°C / 60% RH</span>
+            </div>
+            <table class="tbl">
+              <colgroup>
+                <col style="width: 22%" />
+                <col style="width: 16%" />
+                <col style="width: 14%" />
+                <col style="width: 14%" />
+                <col style="width: 18%" />
+                <col style="width: 16%" />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th>Zone</th>
+                  <th>Temp</th>
+                  <th>Humidity</th>
+                  <th>Dew point</th>
+                  <th>CRAC unit</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Zone A — Row A</td>
+                  <td>20.2°C</td>
+                  <td>44%</td>
+                  <td>7.9°C</td>
+                  <td>CRAC-01</td>
+                  <td><span class="badge ok">Normal</span></td>
+                </tr>
+                <tr>
+                  <td>Zone A — Row B</td>
+                  <td>21.0°C</td>
+                  <td>43%</td>
+                  <td>8.2°C</td>
+                  <td>CRAC-02</td>
+                  <td><span class="badge ok">Normal</span></td>
+                </tr>
+                <tr>
+                  <td>Zone B — Row C</td>
+                  <td>22.1°C</td>
+                  <td>46%</td>
+                  <td>9.6°C</td>
+                  <td>CRAC-03</td>
+                  <td><span class="badge ok">Normal</span></td>
+                </tr>
+                <tr>
+                  <td>Zone C — Row D</td>
+                  <td>24.5°C</td>
+                  <td>48%</td>
+                  <td>12.7°C</td>
+                  <td>CRAC-04</td>
+                  <td><span class="badge warn">Elevated</span></td>
+                </tr>
+                <tr>
+                  <td>Zone D — Row E</td>
+                  <td>26.8°C</td>
+                  <td>52%</td>
+                  <td>16.4°C</td>
+                  <td>CRAC-05</td>
+                  <td><span class="badge warn">Warning</span></td>
+                </tr>
+                <tr>
+                  <td>Zone E — Row F</td>
+                  <td>19.8°C</td>
+                  <td>42%</td>
+                  <td>7.4°C</td>
+                  <td>CRAC-06</td>
+                  <td><span class="badge ok">Normal</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="card">
+            <div class="card-hdr">
+              <div class="card-title">24h temperature trend</div>
+            </div>
+            <canvas id="temp-chart" height="54" style="width: 100%"></canvas>
+          </div>
+        </div>
+
+        <!-- ═══ RODENT ═══ -->
+        <div id="page-rodent" class="page">
+          <div class="page-hdr">
+            <h2>Rodent detection</h2>
+            <div class="page-hdr-right">
+              <span style="font-size: 10.5px; color: var(--color-text-tertiary)"
+                >Last inspection: 28 Apr 2026</span
+              >
+            </div>
+          </div>
+          <div class="kpis">
+            <div class="kpi">
+              <div class="kpi-accent" style="background: #1d9e75"></div>
+              <div class="kpi-label">Sensors active</div>
+              <div class="kpi-val" style="color: #1d9e75">23/24</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-accent" style="background: #1d9e75"></div>
+              <div class="kpi-label">Detections 30d</div>
+              <div class="kpi-val" style="color: #1d9e75">0</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-accent" style="background: #534ab7"></div>
+              <div class="kpi-label">Traps checked</div>
+              <div class="kpi-val">18/18</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-accent" style="background: #185fa5"></div>
+              <div class="kpi-label">Next inspection</div>
+              <div class="kpi-val">12 May</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-hdr">
+              <div class="card-title">Sensor grid</div>
+              <span class="card-meta">24 sensors across facility</span>
+            </div>
+            <div class="sensor-grid">
+              <div class="sensor-cell ok">S-01<br />Clear</div>
+              <div class="sensor-cell ok">S-02<br />Clear</div>
+              <div class="sensor-cell ok">S-03<br />Clear</div>
+              <div class="sensor-cell ok">S-04<br />Clear</div>
+              <div class="sensor-cell ok">S-05<br />Clear</div>
+              <div class="sensor-cell ok">S-06<br />Clear</div>
+              <div class="sensor-cell ok">S-07<br />Clear</div>
+              <div class="sensor-cell ok">S-08<br />Clear</div>
+              <div class="sensor-cell ok">S-09<br />Clear</div>
+              <div class="sensor-cell ok">S-10<br />Clear</div>
+              <div class="sensor-cell ok">S-11<br />Clear</div>
+              <div class="sensor-cell off">S-12<br />Offline</div>
+              <div class="sensor-cell ok">S-13<br />Clear</div>
+              <div class="sensor-cell ok">S-14<br />Clear</div>
+              <div class="sensor-cell ok">S-15<br />Clear</div>
+              <div class="sensor-cell ok">S-16<br />Clear</div>
+              <div class="sensor-cell ok">S-17<br />Clear</div>
+              <div class="sensor-cell ok">S-18<br />Clear</div>
+              <div class="sensor-cell ok">S-19<br />Clear</div>
+              <div class="sensor-cell ok">S-20<br />Clear</div>
+              <div class="sensor-cell ok">S-21<br />Clear</div>
+              <div class="sensor-cell ok">S-22<br />Clear</div>
+              <div class="sensor-cell ok">S-23<br />Clear</div>
+              <div class="sensor-cell ok">S-24<br />Clear</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-hdr">
+              <div class="card-title">Detection log</div>
+              <span class="card-meta">Last 90 days</span>
+            </div>
+            <div
+              style="
+                text-align: center;
+                padding: 20px 0;
+                font-size: 12px;
+                color: var(--color-text-tertiary);
+              "
+            >
+              <div style="font-size: 28px; margin-bottom: 6px">✓</div>
+              No detections recorded — facility clear
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ SECURITY ═══ -->
+        <div id="page-security" class="page">
+          <div class="page-hdr">
+            <h2>Physical security</h2>
+            <div class="page-hdr-right">
+              <button class="refresh-btn" onclick="exportAccessReportCSV()">
+                Access report ↓
+              </button>
+            </div>
+          </div>
+          <div class="kpis">
+            <div class="kpi">
+              <div class="kpi-accent" style="background: #534ab7"></div>
+              <div class="kpi-label">Access events</div>
+              <div class="kpi-val">142</div>
+              <div class="kpi-sub" style="color: var(--color-text-tertiary)">
+                Today
+              </div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-accent" style="background: #a32d2d"></div>
+              <div class="kpi-label">Denied</div>
+              <div class="kpi-val" style="color: #ba7517">3</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-accent" style="background: #1d9e75"></div>
+              <div class="kpi-label">Cameras</div>
+              <div class="kpi-val" style="color: #1d9e75">28/28</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-accent" style="background: #185fa5"></div>
+              <div class="kpi-label">Guards on duty</div>
+              <div class="kpi-val">6</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-accent" style="background: #1d9e75"></div>
+              <div class="kpi-label">Motion alerts</div>
+              <div class="kpi-val" style="color: #1d9e75">0</div>
+            </div>
+          </div>
+          <div class="g2">
+            <div class="card">
+              <div class="card-hdr">
+                <div class="card-title">Entry points</div>
+              </div>
+              <table class="tbl">
+                <colgroup>
+                  <col style="width: 28%" />
+                  <col style="width: 30%" />
+                  <col style="width: 20%" />
+                  <col style="width: 22%" />
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th>Door</th>
+                    <th>Location</th>
+                    <th>Status</th>
+                    <th>Last event</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Main entry</td>
+                    <td>Outside · Front</td>
+                    <td><span class="badge ok">Secured</span></td>
+                    <td>09:12</td>
+                  </tr>
+                  <tr>
+                    <td>Loading bay</td>
+                    <td>Outside · Rear</td>
+                    <td><span class="badge ok">Secured</span></td>
+                    <td>08:44</td>
+                  </tr>
+                  <tr>
+                    <td>Server hall A</td>
+                    <td>Inside · L1</td>
+                    <td><span class="badge ok">Secured</span></td>
+                    <td>09:05</td>
+                  </tr>
+                  <tr>
+                    <td>Server hall B</td>
+                    <td>Inside · L1</td>
+                    <td><span class="badge warn">Propped</span></td>
+                    <td>09:01</td>
+                  </tr>
+                  <tr>
+                    <td>UPS room</td>
+                    <td>Inside · B1</td>
+                    <td><span class="badge ok">Secured</span></td>
+                    <td>07:30</td>
+                  </tr>
+                  <tr>
+                    <td>Roof access</td>
+                    <td>External · R</td>
+                    <td><span class="badge ok">Secured</span></td>
+                    <td>06:00</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="card">
+              <div class="card-hdr">
+                <div class="card-title">Camera feeds</div>
+                <span class="card-meta">Live · 4 zones</span>
+              </div>
+              <div class="cam-grid">
+                <div class="cam">
+                  <div class="cam-screen ok">
+                    <div class="cam-live">
+                      <div class="live-dot"></div>
+                      CAM-01 · Main lobby
+                    </div>
+                  </div>
+                  <div class="cam-lbl">Main lobby — Live</div>
+                </div>
+                <div class="cam">
+                  <div class="cam-screen ok">
+                    <div class="cam-live">
+                      <div class="live-dot"></div>
+                      CAM-04 · Loading bay
+                    </div>
+                  </div>
+                  <div class="cam-lbl">Loading bay — Live</div>
+                </div>
+                <div class="cam">
+                  <div class="cam-screen warn">
+                    <div class="cam-live" style="color: #fef3e2">
+                      <div class="live-dot" style="background: #fef3e2"></div>
+                      CAM-07 · Hall B
+                    </div>
+                  </div>
+                  <div class="cam-lbl">Server Hall B — Door open</div>
+                </div>
+                <div class="cam">
+                  <div class="cam-screen ok">
+                    <div class="cam-live">
+                      <div class="live-dot"></div>
+                      CAM-12 · Perimeter
+                    </div>
+                  </div>
+                  <div class="cam-lbl">Perimeter N — Live</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-hdr">
+              <div class="card-title">Access log</div>
+              <span class="card-meta">Last 10 events</span>
+            </div>
+            <table class="tbl">
+              <colgroup>
+                <col style="width: 12%" />
+                <col style="width: 24%" />
+                <col style="width: 20%" />
+                <col style="width: 22%" />
+                <col style="width: 22%" />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>Person</th>
+                  <th>Door</th>
+                  <th>Credential</th>
+                  <th>Result</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>09:12</td>
+                  <td>R. Verma</td>
+                  <td>Main entry</td>
+                  <td>Badge + PIN</td>
+                  <td><span class="badge ok">Granted</span></td>
+                </tr>
+                <tr>
+                  <td>09:05</td>
+                  <td>A. Sharma</td>
+                  <td>Server hall A</td>
+                  <td>Badge + Bio</td>
+                  <td><span class="badge ok">Granted</span></td>
+                </tr>
+                <tr>
+                  <td>09:01</td>
+                  <td>Unknown</td>
+                  <td>Server hall B</td>
+                  <td>—</td>
+                  <td><span class="badge warn">Propped</span></td>
+                </tr>
+                <tr>
+                  <td>08:52</td>
+                  <td>M. Khan</td>
+                  <td>Server hall B</td>
+                  <td>Badge + Bio</td>
+                  <td><span class="badge ok">Granted</span></td>
+                </tr>
+                <tr>
+                  <td>08:44</td>
+                  <td>Delivery-03</td>
+                  <td>Loading bay</td>
+                  <td>Visitor badge</td>
+                  <td><span class="badge ok">Granted</span></td>
+                </tr>
+                <tr>
+                  <td>08:30</td>
+                  <td>P. Gupta</td>
+                  <td>Main entry</td>
+                  <td>Badge</td>
+                  <td><span class="badge crit">Denied</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <!-- /dc-content -->
+    </div>
+    <!-- /dc-shell -->
+
+    <script>
+      // ── Navigation ──────────────────────────────────────────────────────────────
+      function nav(btn, pageId) {
+        // Deactivate all nav buttons
+        document
+          .querySelectorAll(".nav-btn")
+          .forEach((b) => b.classList.remove("active"));
+        // Activate clicked
+        btn.classList.add("active");
+
+        // Hide all pages
+        document
+          .querySelectorAll(".page")
+          .forEach((p) => p.classList.remove("active"));
+        // Show target page
+        const page = document.getElementById("page-" + pageId);
+        if (page) {
+          page.classList.add("active");
+          // Draw charts if navigating to relevant pages
+          if (pageId === "apphealth") setTimeout(drawRespChart, 50);
+          if (pageId === "env") setTimeout(drawTempChart, 50);
+        }
+      }
+
+      // ── Clock ───────────────────────────────────────────────────────────────────
+      function updateClock() {
+        const now = new Date();
+        const t = now.toLocaleTimeString("en-IN", {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          hour12: false,
+        });
+        document.getElementById("clock").textContent = t;
+      }
+      setInterval(updateClock, 1000);
+      updateClock();
+
+      // ── Refresh ──────────────────────────────────────────────────────────────────
+      function refreshDash() {
+        const now = new Date();
+        const t = now.toLocaleTimeString("en-IN", {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          hour12: false,
+        });
+        const el = document.getElementById("last-refresh");
+        if (el) el.textContent = "Last refreshed: " + t;
+      }
+      refreshDash();
+
+      // ── App filter ───────────────────────────────────────────────────────────────
+      function filterApps(filter, btn) {
+        const rows = document.querySelectorAll("#app-tbody tr");
+        const label = document.getElementById("app-filter-label");
+        let visible = 0;
+
+        rows.forEach((row) => {
+          const status = row.getAttribute("data-status");
+          const show =
+            filter === "all" ||
+            (filter === "ok" && status === "ok") ||
+            (filter === "warn" && status === "warn") ||
+            (filter === "crit" && status === "crit");
+          row.style.display = show ? "" : "none";
+          if (show) visible++;
+        });
+
+        if (label) {
+          const labels = {
+            all: "Showing all apps",
+            ok: "Showing healthy apps",
+            warn: "Showing degraded apps",
+            crit: "Showing critical / down apps",
+          };
+          label.textContent = labels[filter] || "Showing all apps";
+        }
+
+        // Highlight active filter button
+        document
+          .querySelectorAll("#page-apphealth .refresh-btn")
+          .forEach((b) => b.classList.remove("filter-btn-active"));
+        if (btn) btn.classList.add("filter-btn-active");
+      }
+
+      // ── Uptime bars ───────────────────────────────────────────────────────────────
+      function buildUptime(id, pattern) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.innerHTML = "";
+        for (let i = 0; i < 30; i++) {
+          const seg = document.createElement("div");
+          seg.className = "uptime-seg " + (pattern[i] || "ok");
+          seg.title = "Day " + (30 - i);
+          el.appendChild(seg);
+        }
+      }
+
+      const uptimeData = {
+        u1: Array(30)
+          .fill("ok")
+          .map((v, i) => (i === 14 ? "warn" : "ok")),
+        u2: Array(30).fill("ok"),
+        u3: Array(30)
+          .fill("ok")
+          .map((v, i) =>
+            [3, 4, 18].includes(i) ? "warn" : i === 5 ? "crit" : "ok",
+          ),
+        u4: Array(30)
+          .fill("ok")
+          .map((v, i) => (i === 22 ? "warn" : "ok")),
+      };
+      Object.entries(uptimeData).forEach(([id, pattern]) =>
+        buildUptime(id, pattern),
+      );
+
+      // ── Mini canvas charts ────────────────────────────────────────────────────────
+      function drawLineChart(canvasId, data, color) {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) return;
+        canvas.width = canvas.offsetWidth || 600;
+        const ctx = canvas.getContext("2d");
+        const W = canvas.width,
+          H = canvas.height;
+        const pad = { t: 8, r: 8, b: 18, l: 32 };
+        const cw = W - pad.l - pad.r,
+          ch = H - pad.t - pad.b;
+
+        ctx.clearRect(0, 0, W, H);
+
+        const min = Math.min(...data) - 2;
+        const max = Math.max(...data) + 2;
+
+        // Grid lines
+        ctx.strokeStyle = "#e7e5e4";
+        ctx.lineWidth = 0.5;
+        for (let i = 0; i <= 3; i++) {
+          const y = pad.t + (ch / 3) * i;
+          ctx.beginPath();
+          ctx.moveTo(pad.l, y);
+          ctx.lineTo(W - pad.r, y);
+          ctx.stroke();
+        }
+
+        // Y labels
+        ctx.fillStyle = "#a8a29e";
+        ctx.font = "9px JetBrains Mono, monospace";
+        ctx.textAlign = "right";
+        for (let i = 0; i <= 2; i++) {
+          const v = max - (max - min) * (i / 2);
+          const y = pad.t + (ch / 2) * i;
+          ctx.fillText(v.toFixed(0), pad.l - 4, y + 3);
+        }
+
+        // Gradient fill
+        const grad = ctx.createLinearGradient(0, pad.t, 0, H - pad.b);
+        grad.addColorStop(0, color + "30");
+        grad.addColorStop(1, color + "00");
+
+        const pts = data.map((v, i) => ({
+          x: pad.l + (i / (data.length - 1)) * cw,
+          y: pad.t + (1 - (v - min) / (max - min)) * ch,
+        }));
+
+        ctx.beginPath();
+        pts.forEach((p, i) =>
+          i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y),
+        );
+        ctx.lineTo(pts[pts.length - 1].x, H - pad.b);
+        ctx.lineTo(pts[0].x, H - pad.b);
+        ctx.closePath();
+        ctx.fillStyle = grad;
+        ctx.fill();
+
+        // Line
+        ctx.beginPath();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1.5;
+        ctx.lineJoin = "round";
+        pts.forEach((p, i) =>
+          i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y),
+        );
+        ctx.stroke();
+
+        // Dots on peaks
+        const peakIdx = data.indexOf(Math.max(...data));
+        ctx.beginPath();
+        ctx.arc(pts[peakIdx].x, pts[peakIdx].y, 3, 0, Math.PI * 2);
+        ctx.fillStyle = color;
+        ctx.fill();
+      }
+
+      function drawRespChart() {
+        const data = [
+          120, 118, 124, 132, 119, 115, 142, 180, 165, 148, 135, 140, 145, 138,
+          142, 150, 146, 139, 144, 141, 138, 145, 152, 148, 143, 139, 142, 140,
+          145, 142, 140, 138, 142, 145, 148, 142,
+        ];
+        drawLineChart("resp-chart", data, "#534AB7");
+      }
+
+      function drawTempChart() {
+        const data = [
+          19.8, 19.5, 19.2, 19.0, 18.8, 18.9, 19.2, 19.8, 20.5, 21.2, 21.8,
+          22.4, 22.8, 23.1, 23.4, 23.8, 24.2, 24.8, 25.1, 25.4, 25.8, 26.1,
+          26.4, 26.8, 26.5, 26.0, 25.4, 24.8, 24.0, 23.2, 22.5, 21.8, 21.4,
+          21.0, 20.6, 20.2,
+        ];
+        drawLineChart("temp-chart", data, "#BA7517");
+      }
+
+      // Draw charts for visible pages on load
+      drawRespChart();
+      drawTempChart();
+
+      // ── Progress bar animation ────────────────────────────────────────────────────
+      let progVal = 62;
+      setInterval(() => {
+        if (progVal < 99) {
+          progVal = Math.min(99, progVal + 0.08);
+          const bar = document.getElementById("prog-bar");
+          const pct = document.getElementById("prog-pct");
+          if (bar) bar.style.width = progVal.toFixed(1) + "%";
+          if (pct) pct.textContent = Math.round(progVal) + "%";
+        }
+      }, 1000);
+    </script>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+     MODALS
+════════════════════════════════════════════════════════════════ -->
+    <style>
+      /* ── Modal overlay ── */
+      .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 13, 12, 0.45);
+        backdrop-filter: blur(3px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 999;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s ease;
+      }
+      .modal-overlay.open {
+        opacity: 1;
+        pointer-events: all;
+      }
+
+      /* ── Modal box ── */
+      .modal {
+        background: var(--color-background-primary);
+        border: 1px solid var(--color-border-primary);
+        border-radius: 12px;
+        box-shadow:
+          0 20px 60px rgba(0, 0, 0, 0.18),
+          0 4px 16px rgba(0, 0, 0, 0.1);
+        width: 560px;
+        max-width: calc(100vw - 32px);
+        max-height: calc(100vh - 64px);
+        overflow-y: auto;
+        transform: translateY(8px) scale(0.98);
+        transition: transform 0.2s ease;
+      }
+      .modal-overlay.open .modal {
+        transform: translateY(0) scale(1);
+      }
+      .modal.modal-wide {
+        width: 720px;
+      }
+
+      /* ── Modal header ── */
+      .modal-hdr {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 18px 20px 14px;
+        border-bottom: 1px solid var(--color-border-secondary);
+        position: sticky;
+        top: 0;
+        background: var(--color-background-primary);
+        z-index: 1;
+      }
+      .modal-title {
+        font-size: 13.5px;
+        font-weight: 600;
+        color: var(--color-text-primary);
+        letter-spacing: -0.01em;
+      }
+      .modal-close {
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        border: none;
+        background: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--color-text-tertiary);
+        font-size: 16px;
+        transition:
+          background 0.1s,
+          color 0.1s;
+      }
+      .modal-close:hover {
+        background: var(--color-background-secondary);
+        color: var(--color-text-primary);
+      }
+
+      /* ── Modal body ── */
+      .modal-body {
+        padding: 18px 20px;
+      }
+
+      /* ── Form fields ── */
+      .form-row {
+        margin-bottom: 14px;
+      }
+      .form-row label {
+        display: block;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--color-text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 5px;
+      }
+      .form-row select,
+      .form-row input,
+      .form-row textarea {
+        width: 100%;
+        padding: 8px 10px;
+        border: 1px solid var(--color-border-primary);
+        border-radius: 7px;
+        font-size: 12.5px;
+        font-family: var(--font-sans);
+        color: var(--color-text-primary);
+        background: var(--color-background-primary);
+        outline: none;
+        transition:
+          border-color 0.15s,
+          box-shadow 0.15s;
+      }
+      .form-row select:focus,
+      .form-row input:focus,
+      .form-row textarea:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(83, 74, 183, 0.12);
+      }
+      .form-row textarea {
+        resize: vertical;
+        min-height: 72px;
+      }
+      .form-2col {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+      .form-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        padding: 14px 20px 18px;
+        border-top: 1px solid var(--color-border-secondary);
+        margin-top: 4px;
+      }
+      .btn-cancel {
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--color-text-secondary);
+        background: var(--color-background-secondary);
+        border: 1px solid var(--color-border-primary);
+        padding: 7px 16px;
+        border-radius: 7px;
+        cursor: pointer;
+        transition: background 0.1s;
+      }
+      .btn-cancel:hover {
+        background: var(--color-background-tertiary);
+      }
+      .btn-submit {
+        font-size: 12px;
+        font-weight: 600;
+        color: #fff;
+        background: var(--accent);
+        border: 1px solid var(--accent);
+        padding: 7px 18px;
+        border-radius: 7px;
+        cursor: pointer;
+        transition:
+          background 0.15s,
+          box-shadow 0.15s;
+      }
+      .btn-submit:hover {
+        background: #443ea0;
+        box-shadow: 0 2px 8px rgba(83, 74, 183, 0.3);
+      }
+      .btn-submit.danger {
+        background: #a32d2d;
+        border-color: #a32d2d;
+      }
+      .btn-submit.danger:hover {
+        background: #7e1f1f;
+      }
+
+      /* ── Toast notification ── */
+      .toast {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        background: #1a1917;
+        color: #fff;
+        font-size: 12px;
+        font-weight: 500;
+        padding: 10px 16px;
+        border-radius: 8px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+        z-index: 9999;
+        transform: translateY(10px);
+        opacity: 0;
+        transition: all 0.25s ease;
+        max-width: 320px;
+      }
+      .toast.show {
+        transform: translateY(0);
+        opacity: 1;
+      }
+      .toast.success::before {
+        content: "✓  ";
+      }
+      .toast.info::before {
+        content: "ℹ  ";
+      }
+
+      /* ── Forecast chart ── */
+      #forecast-canvas {
+        width: 100%;
+        display: block;
+      }
+
+      /* ── Topology SVG ── */
+      .topo-wrap {
+        overflow: auto;
+        background: var(--color-background-secondary);
+        border-radius: 8px;
+        padding: 12px;
+        border: 1px solid var(--color-border-secondary);
+      }
+    </style>
+
+    <!-- ── MODAL: Forecast ─────────────────────────── -->
+    <div class="modal-overlay" id="modal-forecast">
+      <div class="modal modal-wide">
+        <div class="modal-hdr">
+          <div class="modal-title">Capacity forecast — next 90 days</div>
+          <button class="modal-close" onclick="closeModal('modal-forecast')">
+            ✕
+          </button>
+        </div>
+        <div class="modal-body">
+          <div
+            style="
+              display: grid;
+              grid-template-columns: repeat(3, 1fr);
+              gap: 8px;
+              margin-bottom: 16px;
+            "
+          >
+            <div class="kpi" style="margin: 0">
+              <div class="kpi-accent" style="background: #534ab7"></div>
+              <div class="kpi-label">Days to 80% storage</div>
+              <div class="kpi-val">~62</div>
+            </div>
+            <div class="kpi" style="margin: 0">
+              <div class="kpi-accent" style="background: #ba7517"></div>
+              <div class="kpi-label">Days to 90% CPU (peak)</div>
+              <div class="kpi-val" style="color: #ba7517">~28</div>
+            </div>
+            <div class="kpi" style="margin: 0">
+              <div class="kpi-accent" style="background: #1d9e75"></div>
+              <div class="kpi-label">Growth rate</div>
+              <div class="kpi-val">+340 GB</div>
+              <div class="kpi-sub" style="color: var(--color-text-tertiary)">
+                per day
+              </div>
+            </div>
+          </div>
+          <div class="card-title" style="margin-bottom: 10px">
+            Storage utilisation projection
+          </div>
+          <div
+            class="topo-wrap"
+            style="background: var(--color-background-primary); padding: 8px"
+          >
+            <canvas id="forecast-canvas" height="130"></canvas>
+          </div>
+          <div style="margin-top: 14px">
+            <div class="card-title" style="margin-bottom: 8px">
+              Recommendations
+            </div>
+            <div class="stat-row">
+              <div class="stat-lbl">Storage expansion</div>
+              <div
+                class="stat-val"
+                style="font-family: var(--font-sans); font-size: 11.5px"
+              >
+                Add 40 TB NAS by <span style="color: #ba7517">Day 55</span>
+              </div>
+            </div>
+            <div class="stat-row">
+              <div class="stat-lbl">CPU headroom</div>
+              <div
+                class="stat-val"
+                style="font-family: var(--font-sans); font-size: 11.5px"
+              >
+                Scale srv-prod-01/02 by
+                <span style="color: #ba7517">Day 25</span>
+              </div>
+            </div>
+            <div class="stat-row">
+              <div class="stat-lbl">Memory</div>
+              <div
+                class="stat-val"
+                style="
+                  color: #1d9e75;
+                  font-family: var(--font-sans);
+                  font-size: 11.5px;
+                "
+              >
+                Sufficient for 90+ days
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="form-footer">
+          <button class="btn-cancel" onclick="closeModal('modal-forecast')">
+            Close
+          </button>
+          <button class="btn-submit" onclick="exportForecastCSV()">
+            Export forecast CSV ↓
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── MODAL: Manual Backup ───────────────────── -->
+    <div class="modal-overlay" id="modal-backup">
+      <div class="modal">
+        <div class="modal-hdr">
+          <div class="modal-title">Run manual backup</div>
+          <button class="modal-close" onclick="closeModal('modal-backup')">
+            ✕
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="form-row">
+            <label>Target</label>
+            <select id="backup-target">
+              <option>db-prod-01 — PostgreSQL primary</option>
+              <option>db-prod-02 — PostgreSQL replica</option>
+              <option>files-nas-01 — NAS file server</option>
+              <option>vm-crm-01 — CRM virtual machine</option>
+              <option>mail-srv-01 — Mail server</option>
+              <option>k8s-etcd — Kubernetes etcd</option>
+            </select>
+          </div>
+          <div class="form-2col">
+            <div class="form-row">
+              <label>Backup type</label>
+              <select id="backup-type">
+                <option>Full</option>
+                <option>Incremental</option>
+                <option>Differential</option>
+                <option>Snapshot</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label>Retention (days)</label>
+              <input
+                type="number"
+                id="backup-retention"
+                value="30"
+                min="1"
+                max="365"
+              />
+            </div>
+          </div>
+          <div class="form-row">
+            <label>Destination</label>
+            <select id="backup-dest">
+              <option>Primary NAS — /backup/manual/</option>
+              <option>Off-site S3 — s3://dc-backup-vault/</option>
+              <option>Tape library — LTO-8 A</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label>Notes (optional)</label>
+            <textarea
+              id="backup-notes"
+              placeholder="Reason for manual backup, change reference, etc."
+            ></textarea>
+          </div>
+          <div
+            style="
+              background: #fef3e2;
+              border: 1px solid #fad9a0;
+              border-radius: 7px;
+              padding: 9px 12px;
+              font-size: 11.5px;
+              color: #92560a;
+            "
+          >
+            ⚠ Manual backups run immediately and may briefly increase I/O load
+            on the target.
+          </div>
+        </div>
+        <div class="form-footer">
+          <button class="btn-cancel" onclick="closeModal('modal-backup')">
+            Cancel
+          </button>
+          <button class="btn-submit" onclick="submitBackup()">
+            Start backup
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── MODAL: Create Snapshot ─────────────────── -->
+    <div class="modal-overlay" id="modal-snapshot">
+      <div class="modal">
+        <div class="modal-hdr">
+          <div class="modal-title">Create snapshot</div>
+          <button class="modal-close" onclick="closeModal('modal-snapshot')">
+            ✕
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="form-row">
+            <label>Volume</label>
+            <select id="snap-volume">
+              <option>vol-db-prod — 840 GB</option>
+              <option>vol-app-prod — 210 GB</option>
+              <option>vol-nas-01 — 1.1 TB</option>
+              <option>vol-log-01 — 55 GB</option>
+              <option>vol-crm-01 — 420 GB</option>
+            </select>
+          </div>
+          <div class="form-2col">
+            <div class="form-row">
+              <label>Consistency type</label>
+              <select id="snap-type">
+                <option>Crash-consistent</option>
+                <option>App-consistent</option>
+                <option>Full copy</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label>Retention (days)</label>
+              <input
+                type="number"
+                id="snap-retention"
+                value="14"
+                min="1"
+                max="365"
+              />
+            </div>
+          </div>
+          <div class="form-row">
+            <label>Snapshot label</label>
+            <input
+              type="text"
+              id="snap-label"
+              placeholder="e.g. pre-deploy-v5.1, manual-test"
+            />
+          </div>
+          <div class="form-row">
+            <label>Schedule recurrence</label>
+            <select id="snap-sched">
+              <option>One-time (now)</option>
+              <option>Hourly</option>
+              <option>Daily at 02:00</option>
+              <option>Weekly — Sunday 02:00</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-footer">
+          <button class="btn-cancel" onclick="closeModal('modal-snapshot')">
+            Cancel
+          </button>
+          <button class="btn-submit" onclick="submitSnapshot()">
+            Create snapshot
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── MODAL: Restore Request ─────────────────── -->
+    <div class="modal-overlay" id="modal-restore">
+      <div class="modal">
+        <div class="modal-hdr">
+          <div class="modal-title">New restore request</div>
+          <button class="modal-close" onclick="closeModal('modal-restore')">
+            ✕
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="form-row">
+            <label>Source snapshot / backup</label>
+            <select id="restore-source">
+              <option>snap-00a1 — vol-db-prod — 09:00 today</option>
+              <option>snap-00a2 — vol-app-prod — 08:30 today</option>
+              <option>snap-00a3 — vol-nas-01 — 04:00 today</option>
+              <option>backup-2025 — files-nas-01 — yesterday</option>
+              <option>snap-0088 — mail-srv-01 — Mon 14:00</option>
+            </select>
+          </div>
+          <div class="form-2col">
+            <div class="form-row">
+              <label>Target host</label>
+              <input
+                type="text"
+                id="restore-target"
+                placeholder="e.g. db-dev-02"
+              />
+            </div>
+            <div class="form-row">
+              <label>Restore type</label>
+              <select id="restore-type">
+                <option>Full volume restore</option>
+                <option>File-level restore</option>
+                <option>Database restore</option>
+                <option>Bare-metal restore</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-2col">
+            <div class="form-row">
+              <label>Requestor</label>
+              <input
+                type="text"
+                id="restore-requestor"
+                placeholder="team or user name"
+              />
+            </div>
+            <div class="form-row">
+              <label>Priority</label>
+              <select id="restore-priority">
+                <option>Normal</option>
+                <option>High</option>
+                <option>Critical — immediate</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <label>Justification / change reference</label>
+            <textarea
+              id="restore-notes"
+              placeholder="Describe the reason, link to change ticket, etc."
+            ></textarea>
+          </div>
+          <div
+            style="
+              background: #fee9e9;
+              border: 1px solid #f8c1c1;
+              border-radius: 7px;
+              padding: 9px 12px;
+              font-size: 11.5px;
+              color: #8e1c1c;
+            "
+          >
+            ✕ Restoring to a production host will overwrite existing data.
+            Ensure approval is obtained before submitting.
+          </div>
+        </div>
+        <div class="form-footer">
+          <button class="btn-cancel" onclick="closeModal('modal-restore')">
+            Cancel
+          </button>
+          <button class="btn-submit danger" onclick="submitRestore()">
+            Submit restore request
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── MODAL: SOC New Case ────────────────────── -->
+    <div class="modal-overlay" id="modal-soc-case">
+      <div class="modal">
+        <div class="modal-hdr">
+          <div class="modal-title">New SOC case</div>
+          <button class="modal-close" onclick="closeModal('modal-soc-case')">
+            ✕
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="form-2col">
+            <div class="form-row">
+              <label>Case type</label>
+              <select id="soc-type">
+                <option>Incident</option>
+                <option>Threat hunt</option>
+                <option>Vulnerability</option>
+                <option>Compliance</option>
+                <option>Forensics</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label>Priority</label>
+              <select id="soc-priority">
+                <option>Critical</option>
+                <option>High</option>
+                <option>Medium</option>
+                <option>Low</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <label>Title</label>
+            <input
+              type="text"
+              id="soc-title"
+              placeholder="Brief description of the security event"
+            />
+          </div>
+          <div class="form-2col">
+            <div class="form-row">
+              <label>Assignee</label>
+              <select id="soc-assignee">
+                <option>A. Singh</option>
+                <option>R. Patel</option>
+                <option>M. Khan</option>
+                <option>Unassigned</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label>Source / alert ID</label>
+              <input
+                type="text"
+                id="soc-source"
+                placeholder="e.g. SIEM-2042, IDS-009"
+              />
+            </div>
+          </div>
+          <div class="form-row">
+            <label>Affected systems</label>
+            <input
+              type="text"
+              id="soc-systems"
+              placeholder="Comma-separated hostnames or IPs"
+            />
+          </div>
+          <div class="form-row">
+            <label>Description &amp; initial findings</label>
+            <textarea
+              id="soc-desc"
+              placeholder="What was observed, when, what indicators of compromise were found…"
+            ></textarea>
+          </div>
+        </div>
+        <div class="form-footer">
+          <button class="btn-cancel" onclick="closeModal('modal-soc-case')">
+            Cancel
+          </button>
+          <button class="btn-submit" onclick="submitSOCCase()">
+            Create case
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── MODAL: NOC Topology ────────────────────── -->
+    <div class="modal-overlay" id="modal-topology">
+      <div class="modal modal-wide">
+        <div class="modal-hdr">
+          <div class="modal-title">Network topology — Site IN-DED-01</div>
+          <button class="modal-close" onclick="closeModal('modal-topology')">
+            ✕
+          </button>
+        </div>
+        <div class="modal-body">
+          <div
+            style="
+              display: flex;
+              gap: 10px;
+              margin-bottom: 12px;
+              flex-wrap: wrap;
+            "
+          >
+            <span
+              style="
+                font-size: 10.5px;
+                color: var(--color-text-tertiary);
+                display: flex;
+                align-items: center;
+                gap: 5px;
+              "
+              ><span
+                style="
+                  display: inline-block;
+                  width: 10px;
+                  height: 10px;
+                  border-radius: 50%;
+                  background: #1d9e75;
+                "
+              ></span
+              >Up</span
+            >
+            <span
+              style="
+                font-size: 10.5px;
+                color: var(--color-text-tertiary);
+                display: flex;
+                align-items: center;
+                gap: 5px;
+              "
+              ><span
+                style="
+                  display: inline-block;
+                  width: 10px;
+                  height: 10px;
+                  border-radius: 50%;
+                  background: #ba7517;
+                "
+              ></span
+              >High load</span
+            >
+            <span
+              style="
+                font-size: 10.5px;
+                color: var(--color-text-tertiary);
+                display: flex;
+                align-items: center;
+                gap: 5px;
+              "
+              ><span
+                style="
+                  display: inline-block;
+                  width: 10px;
+                  height: 10px;
+                  border-radius: 50%;
+                  background: #a32d2d;
+                "
+              ></span
+              >Down / critical</span
+            >
+            <span
+              style="
+                font-size: 10.5px;
+                color: var(--color-text-tertiary);
+                display: flex;
+                align-items: center;
+                gap: 5px;
+              "
+              ><span
+                style="
+                  display: inline-block;
+                  width: 10px;
+                  height: 10px;
+                  border-radius: 50%;
+                  background: #185fa5;
+                "
+              ></span
+              >Standby</span
+            >
+            <span
+              style="
+                font-size: 10.5px;
+                color: var(--color-text-tertiary);
+                margin-left: auto;
+              "
+              >Live · <span id="topo-time">—</span></span
+            >
+          </div>
+          <div class="topo-wrap">
+            <svg
+              id="topo-svg"
+              viewBox="0 0 680 360"
+              xmlns="http://www.w3.org/2000/svg"
+              style="
+                width: 100%;
+                display: block;
+                font-family: &quot;DM Sans&quot;, sans-serif;
+              "
+            ></svg>
+          </div>
+          <div
+            style="
+              margin-top: 12px;
+              display: grid;
+              grid-template-columns: repeat(3, 1fr);
+              gap: 8px;
+            "
+          >
+            <div
+              class="stat-row"
+              style="
+                flex-direction: column;
+                align-items: flex-start;
+                padding: 8px;
+                background: var(--color-background-secondary);
+                border-radius: 7px;
+                border: none;
+              "
+            >
+              <div class="stat-lbl" style="margin-bottom: 3px">WAN Primary</div>
+              <div class="stat-val">14ms · 2.1 Gbps</div>
+            </div>
+            <div
+              class="stat-row"
+              style="
+                flex-direction: column;
+                align-items: flex-start;
+                padding: 8px;
+                background: var(--color-background-secondary);
+                border-radius: 7px;
+                border: none;
+              "
+            >
+              <div class="stat-lbl" style="margin-bottom: 3px">
+                Core switches
+              </div>
+              <div class="stat-val">0.3ms · 8.0 Gbps</div>
+            </div>
+            <div
+              class="stat-row"
+              style="
+                flex-direction: column;
+                align-items: flex-start;
+                padding: 8px;
+                background: var(--color-background-secondary);
+                border-radius: 7px;
+                border: none;
+              "
+            >
+              <div class="stat-lbl" style="margin-bottom: 3px">
+                Load balancer
+              </div>
+              <div class="stat-val" style="color: #ba7517">
+                0.6ms · High load
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="form-footer">
+          <button class="btn-cancel" onclick="closeModal('modal-topology')">
+            Close
+          </button>
+          <button class="btn-submit" onclick="exportTopoReport()">
+            Export topology report ↓
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Toast element ─────────────────────────── -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+      // ── Modal helpers ──────────────────────────────────────────────────────────
+      function openModal(id) {
+        document.getElementById(id).classList.add("open");
+        if (id === "modal-forecast") setTimeout(drawForecastChart, 80);
+        if (id === "modal-topology") {
+          drawTopology();
+          updateTopoTime();
+        }
+      }
+      function closeModal(id) {
+        document.getElementById(id).classList.remove("open");
+      }
+      // Close on overlay click
+      document.querySelectorAll(".modal-overlay").forEach((ov) => {
+        ov.addEventListener("click", (e) => {
+          if (e.target === ov) ov.classList.remove("open");
+        });
+      });
+      // Close on Escape
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape")
+          document
+            .querySelectorAll(".modal-overlay.open")
+            .forEach((ov) => ov.classList.remove("open"));
+      });
+
+      // ── Toast ───────────────────────────────────────────────────────────────────
+      function showToast(msg, type = "success") {
+        const t = document.getElementById("toast");
+        t.textContent = msg;
+        t.className = "toast " + type;
+        void t.offsetWidth;
+        t.classList.add("show");
+        setTimeout(() => t.classList.remove("show"), 3500);
+      }
+
+      // ── CSV download helper ─────────────────────────────────────────────────────
+      function downloadCSV(filename, rows) {
+        const csv = rows
+          .map((r) =>
+            r.map((c) => '"' + String(c).replace(/"/g, '""') + '"').join(","),
+          )
+          .join("\n");
+        const blob = new Blob([csv], { type: "text/csv" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(a.href);
+      }
+
+      // ── App Health CSV export ───────────────────────────────────────────────────
+      function exportAppHealthCSV() {
+        const rows = [
+          [
+            "Application",
+            "Status",
+            "Uptime",
+            "Response",
+            "Error %",
+            "Tier",
+            "Version",
+          ],
+        ];
+        document.querySelectorAll("#app-tbody tr").forEach((tr) => {
+          const cells = tr.querySelectorAll("td");
+          rows.push([...cells].map((td) => td.textContent.trim()));
+        });
+        downloadCSV("app-health-" + dateStamp() + ".csv", rows);
+        showToast("App health CSV downloaded");
+      }
+
+      // ── Incidents CSV export ────────────────────────────────────────────────────
+      function exportIncidentsCSV() {
+        const rows = [["ID", "Severity", "Time", "Description"]];
+        const data = [
+          [
+            "SIEM-2041",
+            "Critical",
+            "09:14",
+            "Brute-force SSH — 192.168.4.22 → 12 targets — 847 attempts/min",
+          ],
+          [
+            "SIEM-2040",
+            "High",
+            "08:52",
+            "Privilege escalation — svc-etl on db-prod-02",
+          ],
+          [
+            "SIEM-2039",
+            "High",
+            "08:20",
+            "Anomalous exfil — 42 GB outbound port 443",
+          ],
+          [
+            "SIEM-2038",
+            "Medium",
+            "07:15",
+            "Auth loop — API gateway — rate limiter triggered — Resolved",
+          ],
+        ];
+        data.forEach((r) => rows.push(r));
+        downloadCSV("siem-incidents-" + dateStamp() + ".csv", rows);
+        showToast("SIEM incidents CSV downloaded");
+      }
+
+      // ── Access report CSV export ────────────────────────────────────────────────
+      function exportAccessReportCSV() {
+        const rows = [["Time", "Person", "Door", "Credential", "Result"]];
+        const data = [
+          ["09:12", "R. Verma", "Main entry", "Badge + PIN", "Granted"],
+          ["09:05", "A. Sharma", "Server hall A", "Badge + Bio", "Granted"],
+          ["09:01", "Unknown", "Server hall B", "—", "Propped open"],
+          ["08:52", "M. Khan", "Server hall B", "Badge + Bio", "Granted"],
+          ["08:44", "Delivery-03", "Loading bay", "Visitor badge", "Granted"],
+          ["08:30", "P. Gupta", "Main entry", "Badge", "Denied"],
+        ];
+        data.forEach((r) => rows.push(r));
+        downloadCSV("access-report-" + dateStamp() + ".csv", rows);
+        showToast("Access report CSV downloaded");
+      }
+
+      // ── Forecast CSV export ─────────────────────────────────────────────────────
+      function exportForecastCSV() {
+        const rows = [["Day", "Storage TB", "CPU %", "Memory %"]];
+        for (let i = 0; i <= 90; i++) {
+          rows.push([
+            "Day " + i,
+            (58.4 + i * 0.34).toFixed(1),
+            Math.min(99, (72 + i * 0.29 + Math.sin(i) * 2).toFixed(1)),
+            (64 + i * 0.08).toFixed(1),
+          ]);
+        }
+        downloadCSV("capacity-forecast-" + dateStamp() + ".csv", rows);
+        showToast("Forecast CSV downloaded");
+        closeModal("modal-forecast");
+      }
+
+      // ── Topology report export ───────────────────────────────────────────────────
+      function exportTopoReport() {
+        const rows = [
+          [
+            "Device",
+            "Role",
+            "Latency",
+            "Packet loss",
+            "BW used",
+            "Interface",
+            "Status",
+          ],
+        ];
+        const data = [
+          [
+            "WAN-GW-01",
+            "WAN Gateway (Primary)",
+            "14ms",
+            "0.02%",
+            "2.1 Gbps",
+            "1GbE",
+            "Up",
+          ],
+          [
+            "WAN-GW-02",
+            "WAN Gateway (Backup)",
+            "22ms",
+            "0.00%",
+            "Standby",
+            "1GbE",
+            "Standby",
+          ],
+          [
+            "FW-01",
+            "Firewall Cluster",
+            "0.8ms",
+            "0.01%",
+            "8.0 Gbps",
+            "10GbE",
+            "Up",
+          ],
+          [
+            "SW-CORE-A",
+            "Core Switch A",
+            "0.3ms",
+            "0.00%",
+            "4.2 Gbps",
+            "40GbE",
+            "Up",
+          ],
+          [
+            "SW-CORE-B",
+            "Core Switch B",
+            "0.3ms",
+            "0.00%",
+            "3.8 Gbps",
+            "40GbE",
+            "Up",
+          ],
+          [
+            "LB-01",
+            "Load Balancer",
+            "0.6ms",
+            "0.01%",
+            "5.4 Gbps",
+            "10GbE",
+            "High load",
+          ],
+          ["SRV-PROD-01", "Production server", "—", "—", "—", "10GbE", "Up"],
+          ["SRV-PROD-02", "Production server", "—", "—", "—", "10GbE", "Up"],
+          ["DB-PROD-01", "Database primary", "—", "—", "—", "10GbE", "Up"],
+        ];
+        data.forEach((r) => rows.push(r));
+        downloadCSV("topology-report-" + dateStamp() + ".csv", rows);
+        showToast("Topology report CSV downloaded");
+      }
+
+      // ── Date stamp helper ────────────────────────────────────────────────────────
+      function dateStamp() {
+        return new Date().toISOString().slice(0, 10);
+      }
+
+      // ── Manual backup submit ─────────────────────────────────────────────────────
+      function submitBackup() {
+        const target = document.getElementById("backup-target").value;
+        const type = document.getElementById("backup-type").value;
+        closeModal("modal-backup");
+        showToast(type + " backup started for " + target.split(" ")[0]);
+      }
+
+      // ── Snapshot submit ──────────────────────────────────────────────────────────
+      function submitSnapshot() {
+        const vol = document.getElementById("snap-volume").value.split(" ")[0];
+        const label = document.getElementById("snap-label").value || "manual";
+        const type = document.getElementById("snap-type").value;
+        closeModal("modal-snapshot");
+        showToast(
+          "Snapshot created: " + vol + " (" + label + ", " + type + ")",
+        );
+      }
+
+      // ── Restore submit ───────────────────────────────────────────────────────────
+      function submitRestore() {
+        const target =
+          document.getElementById("restore-target").value.trim() ||
+          "unspecified";
+        const source = document
+          .getElementById("restore-source")
+          .value.split(" ")[0];
+        closeModal("modal-restore");
+        showToast(
+          "Restore request submitted: " + source + " → " + target,
+          "info",
+        );
+      }
+
+      // ── SOC case submit ───────────────────────────────────────────────────────────
+      function submitSOCCase() {
+        const title =
+          document.getElementById("soc-title").value.trim() || "Untitled";
+        const priority = document.getElementById("soc-priority").value;
+        const assignee = document.getElementById("soc-assignee").value;
+        const caseNum = "SOC-0" + (442 + Math.floor(Math.random() * 10));
+        closeModal("modal-soc-case");
+        showToast(caseNum + " created · " + priority + " · " + assignee);
+      }
+
+      // ── Forecast canvas chart ────────────────────────────────────────────────────
+      function drawForecastChart() {
+        const canvas = document.getElementById("forecast-canvas");
+        if (!canvas) return;
+        canvas.width = canvas.offsetWidth || 660;
+        const ctx = canvas.getContext("2d");
+        const W = canvas.width,
+          H = canvas.height;
+        const pad = { t: 12, r: 16, b: 28, l: 44 };
+        const cw = W - pad.l - pad.r,
+          ch = H - pad.t - pad.b;
+        ctx.clearRect(0, 0, W, H);
+
+        const days = 90;
+        const storageNow = 58.4,
+          growthPerDay = 0.34;
+        const cpuNow = 72,
+          cpuGrowth = 0.29;
+
+        const storagePts = [],
+          cpuPts = [];
+        for (let i = 0; i <= days; i++) {
+          storagePts.push(storageNow + i * growthPerDay);
+          cpuPts.push(
+            Math.min(100, cpuNow + i * cpuGrowth + Math.sin(i * 0.4) * 1.5),
+          );
+        }
+
+        // Grid & axes
+        ctx.strokeStyle = "#e7e5e4";
+        ctx.lineWidth = 0.5;
+        ctx.fillStyle = "#a8a29e";
+        ctx.font = "9px JetBrains Mono, monospace";
+        for (let i = 0; i <= 4; i++) {
+          const y = pad.t + (ch / 4) * i;
+          ctx.beginPath();
+          ctx.moveTo(pad.l, y);
+          ctx.lineTo(W - pad.r, y);
+          ctx.stroke();
+          ctx.textAlign = "right";
+          ctx.fillText(100 - i * 25 + "%", pad.l - 4, y + 3);
+        }
+        // X labels
+        ctx.textAlign = "center";
+        [0, 30, 60, 90].forEach((d) => {
+          const x = pad.l + (d / days) * cw;
+          ctx.fillText("Day " + d, x, H - 4);
+        });
+
+        // Threshold lines
+        const thresh80y = pad.t + (1 - 0.8) * ch;
+        const thresh90y = pad.t + (1 - 0.9) * ch;
+        ctx.setLineDash([4, 3]);
+        ctx.strokeStyle = "#BA7517";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(pad.l, thresh80y);
+        ctx.lineTo(W - pad.r, thresh80y);
+        ctx.stroke();
+        ctx.fillStyle = "#BA7517";
+        ctx.textAlign = "right";
+        ctx.font = "9px DM Sans,sans-serif";
+        ctx.fillText("80% threshold", W - pad.r - 2, thresh80y - 3);
+        ctx.strokeStyle = "#A32D2D";
+        ctx.beginPath();
+        ctx.moveTo(pad.l, thresh90y);
+        ctx.lineTo(W - pad.r, thresh90y);
+        ctx.stroke();
+        ctx.fillStyle = "#A32D2D";
+        ctx.fillText("90% critical", W - pad.r - 2, thresh90y - 3);
+        ctx.setLineDash([]);
+
+        function drawSeries(pts, color, max) {
+          const mapped = pts.map((v, i) => ({
+            x: pad.l + (i / days) * cw,
+            y: pad.t + (1 - v / max) * ch,
+          }));
+          const grad = ctx.createLinearGradient(0, pad.t, 0, H - pad.b);
+          grad.addColorStop(0, color + "28");
+          grad.addColorStop(1, color + "00");
+          ctx.beginPath();
+          mapped.forEach((p, i) =>
+            i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y),
+          );
+          ctx.lineTo(mapped[mapped.length - 1].x, H - pad.b);
+          ctx.lineTo(mapped[0].x, H - pad.b);
+          ctx.closePath();
+          ctx.fillStyle = grad;
+          ctx.fill();
+          ctx.beginPath();
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 2;
+          ctx.lineJoin = "round";
+          mapped.forEach((p, i) =>
+            i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y),
+          );
+          ctx.stroke();
+        }
+
+        drawSeries(
+          storagePts.map((v) => (v / 100) * 100),
+          "#534AB7",
+          100,
+        );
+        drawSeries(cpuPts, "#BA7517", 100);
+
+        // Legend
+        ctx.font = "10px DM Sans,sans-serif";
+        ctx.textAlign = "left";
+        [
+          [12, "#534AB7", "Storage (% of 100 TB)"],
+          [120, "#BA7517", "CPU (peak % avg)"],
+        ].forEach(([x, c, lbl]) => {
+          ctx.fillStyle = c;
+          ctx.fillRect(pad.l + x, pad.t + 4, 12, 4);
+          ctx.fillStyle = "#57534e";
+          ctx.fillText(lbl, pad.l + x + 16, pad.t + 10);
+        });
+      }
+
+      // ── Topology SVG ─────────────────────────────────────────────────────────────
+      function updateTopoTime() {
+        const el = document.getElementById("topo-time");
+        if (el)
+          el.textContent = new Date().toLocaleTimeString("en-IN", {
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+            hour12: false,
+          });
+      }
+
+      function drawTopology() {
+        const svg = document.getElementById("topo-svg");
+        if (!svg) return;
+
+        const nodes = [
+          {
+            id: "internet",
+            x: 340,
+            y: 28,
+            label: "Internet",
+            sub: "",
+            color: "#57534e",
+            icon: "cloud",
+          },
+          {
+            id: "wan1",
+            x: 220,
+            y: 90,
+            label: "WAN-GW-01",
+            sub: "Primary · 14ms",
+            color: "#1D9E75",
+            icon: "router",
+          },
+          {
+            id: "wan2",
+            x: 460,
+            y: 90,
+            label: "WAN-GW-02",
+            sub: "Standby",
+            color: "#185FA5",
+            icon: "router",
+          },
+          {
+            id: "fw",
+            x: 340,
+            y: 155,
+            label: "Firewall",
+            sub: "8.0 Gbps",
+            color: "#1D9E75",
+            icon: "shield",
+          },
+          {
+            id: "swA",
+            x: 220,
+            y: 225,
+            label: "SW-CORE-A",
+            sub: "4.2 Gbps",
+            color: "#1D9E75",
+            icon: "switch",
+          },
+          {
+            id: "swB",
+            x: 460,
+            y: 225,
+            label: "SW-CORE-B",
+            sub: "3.8 Gbps",
+            color: "#1D9E75",
+            icon: "switch",
+          },
+          {
+            id: "lb",
+            x: 340,
+            y: 225,
+            label: "LB-01",
+            sub: "High load",
+            color: "#BA7517",
+            icon: "lb",
+          },
+          {
+            id: "srv1",
+            x: 140,
+            y: 310,
+            label: "srv-prod-01",
+            sub: "88% CPU",
+            color: "#A32D2D",
+            icon: "server",
+          },
+          {
+            id: "srv2",
+            x: 260,
+            y: 310,
+            label: "srv-prod-02",
+            sub: "74% CPU",
+            color: "#BA7517",
+            icon: "server",
+          },
+          {
+            id: "db1",
+            x: 400,
+            y: 310,
+            label: "db-prod-01",
+            sub: "Healthy",
+            color: "#1D9E75",
+            icon: "db",
+          },
+          {
+            id: "srv3",
+            x: 540,
+            y: 310,
+            label: "srv-prod-03",
+            sub: "61% CPU",
+            color: "#1D9E75",
+            icon: "server",
+          },
+        ];
+
+        const links = [
+          ["internet", "wan1"],
+          ["internet", "wan2"],
+          ["wan1", "fw"],
+          ["wan2", "fw"],
+          ["fw", "swA"],
+          ["fw", "swB"],
+          ["fw", "lb"],
+          ["swA", "srv1"],
+          ["swA", "srv2"],
+          ["lb", "srv2"],
+          ["lb", "db1"],
+          ["swB", "db1"],
+          ["swB", "srv3"],
+        ];
+
+        const nodeMap = {};
+        nodes.forEach((n) => (nodeMap[n.id] = n));
+
+        let html = "";
+
+        // Links
+        links.forEach(([a, b]) => {
+          const na = nodeMap[a],
+            nb = nodeMap[b];
+          const isWarn = na.color === "#BA7517" || nb.color === "#BA7517";
+          const isCrit = na.color === "#A32D2D" || nb.color === "#A32D2D";
+          const stroke = isCrit ? "#F7C1C1" : isWarn ? "#FAD9A0" : "#d6d3d1";
+          html += `<line x1="${na.x}" y1="${na.y + 20}" x2="${nb.x}" y2="${nb.y - 20}" stroke="${stroke}" stroke-width="1.5" stroke-dasharray="${na.id === "wan2" || nb.id === "wan2" ? "5,3" : "none"}"/>`;
+        });
+
+        // Nodes
+        nodes.forEach((n) => {
+          const bg =
+            n.color === "#1D9E75"
+              ? "#E8F7F2"
+              : n.color === "#A32D2D"
+                ? "#FEE9E9"
+                : n.color === "#BA7517"
+                  ? "#FEF3E2"
+                  : n.color === "#185FA5"
+                    ? "#E5EEFA"
+                    : "#F5F4F2";
+          const border = n.color;
+          html += `
+      <g transform="translate(${n.x},${n.y})">
+        <rect x="-46" y="-18" width="92" height="36" rx="7" fill="${bg}" stroke="${border}" stroke-width="1.2"/>
+        <circle cx="-30" cy="0" r="7" fill="${n.color}" opacity=".85"/>
+        <text x="-4" y="-4" font-size="10" font-weight="600" fill="#1a1917" text-anchor="middle">${n.label}</text>
+        <text x="-4" y="9" font-size="8.5" fill="#78716c" text-anchor="middle">${n.sub}</text>
+      </g>`;
+        });
+
+        svg.innerHTML = html;
+      }
+    </script>
+  </body>
+</html>
