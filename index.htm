@@ -3639,7 +3639,7 @@
       // ── Uptime table with month/day headers ──────────────────────────────────────
       (function buildUptimeTable() {
         const DAYS = 30;
-        const today = new Date(2026, 4, 1); // May 1 2026 — matches dashboard date
+        const today = new Date(); // always today
         today.setHours(0, 0, 0, 0);
 
         // Build array of dates oldest → newest (index 0 = 29 days ago, index 29 = today)
